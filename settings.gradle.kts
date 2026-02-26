@@ -33,3 +33,7 @@ plugins {
 }
 
 include(":composeApp")
+include(":shared:core")
+include(":shared:domain")
+include(":shared:data")
+include(":shared:printing")
