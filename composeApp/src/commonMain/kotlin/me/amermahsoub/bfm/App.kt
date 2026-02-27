@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +32,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -67,7 +67,7 @@ fun App() {
         )
     }
 
-    MaterialTheme {
+    TenantTheme(tenantConfig = tenantConfig) {
         Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
             Column(
                 modifier = Modifier
@@ -144,11 +144,7 @@ private fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFF5B7BE8), Color(0xFF6B3FB3)),
-                ),
-            ),
+            .background(tenantColors().background),
         contentAlignment = Alignment.Center,
     ) {
         Card(
@@ -160,11 +156,7 @@ private fun LoginScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color(0xFF5B7BE8), Color(0xFF6B3FB3)),
-                        ),
-                    )
+                    .background(tenantColors().primary)
                     .padding(vertical = 24.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -178,14 +170,18 @@ private fun LoginScreen(
                     Spacer(Modifier.height(6.dp))
                     Text(
                         text = tenantSlug ?: "x-soft",
-                        color = Color(0xFFDCE6FF),
+                        color = tenantColors().onPrimary.copy(alpha = 0.82f),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
 
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .widthIn(max = 360.dp)
+                    .align(Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text("Login", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -193,7 +189,7 @@ private fun LoginScreen(
                     value = username,
                     onValueChange = { username = it },
                     label = { Text("Email Address") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 340.dp).align(Alignment.CenterHorizontally),
                     enabled = enabled,
                     singleLine = true,
                 )
@@ -201,7 +197,7 @@ private fun LoginScreen(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 340.dp).align(Alignment.CenterHorizontally),
                     visualTransformation = PasswordVisualTransformation(),
                     enabled = enabled,
                     singleLine = true,
@@ -210,7 +206,15 @@ private fun LoginScreen(
                     TextButton(onClick = onChangeTenant) { Text("Change organization") }
                     TextButton(onClick = {}, enabled = false) { Text("Remember me") }
                 }
-                Button(onClick = { onLogin(username, password) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { onLogin(username, password) },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = tenantColors().primary,
+                        contentColor = tenantColors().onPrimary,
+                    ),
+                ) {
                     Text("Login")
                 }
                 if (!enabled) {

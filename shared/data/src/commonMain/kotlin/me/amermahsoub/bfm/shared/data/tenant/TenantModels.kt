@@ -18,6 +18,8 @@ data class TenantConfig(
     val timezone: String,
     @SerialName("locale_default") val localeDefault: String,
     val pos: PosConfig,
+    val primaryColorHex: String? = null,
+    val backgroundColorHex: String? = null,
 )
 
 @Serializable

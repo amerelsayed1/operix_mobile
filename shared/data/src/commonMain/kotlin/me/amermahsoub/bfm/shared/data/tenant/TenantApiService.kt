@@ -67,4 +67,6 @@ private fun TenantConfigApiResponse.toTenantConfig(): TenantConfig = TenantConfi
         defaultTaxRate = 0.0,
         receiptCharsPerLine = 42,
     ),
+    primaryColorHex = theme.primaryColor,
+    backgroundColorHex = theme.backgroundColor,
 )
