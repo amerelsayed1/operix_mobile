@@ -1,0 +1,111 @@
+package me.amermahsoub.bfm
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun TenantSlugScreen(
+    state: TenantSlugUiState,
+    onSlugChange: (String) -> Unit,
+    onContinue: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 560.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "Select Your Organization",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Start,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(min = 280.dp, max = 420.dp)
+                    .fillMaxWidth(),
+            )
+            Text(
+                text = "Enter your organization's slug to continue",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Start,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(min = 280.dp, max = 420.dp)
+                    .fillMaxWidth(),
+            )
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(min = 280.dp, max = 420.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "Organization Slug",
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                OutlinedTextField(
+                    value = state.slugText,
+                    onValueChange = onSlugChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("e.g. tech-innovations") },
+                    trailingIcon = {
+                        if (state.slugText.isNotEmpty()) {
+                            IconButton(onClick = { onSlugChange("") }, enabled = !state.isSaving) {
+                                Text("×")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    enabled = !state.isSaving,
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Text,
+                    ),
+                )
+
+                if (state.errorMessage != null) {
+                    Text(state.errorMessage, color = MaterialTheme.colorScheme.error)
+                }
+            }
+
+            Button(
+                onClick = onContinue,
+                enabled = state.isSlugValid && !state.isSaving,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(min = 220.dp, max = 420.dp),
+            ) {
+                if (state.isSaving) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.widthIn(max = 16.dp))
+                } else {
+                    Text("Continue")
+                }
+            }
+
+        }
+    }
+}

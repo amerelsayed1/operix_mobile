@@ -9,8 +9,8 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 actual class DatabaseDriverFactory {
-    actual fun createDriver(): SqlDriver = JdbcSqliteDriver("jdbc:sqlite:bfm.db").also {
-        BfmDatabase.Schema.create(it)
+    actual fun createDriver(): SqlDriver = JdbcSqliteDriver("jdbc:sqlite:bfm.db").also { driver ->
+        runCatching { BfmDatabase.Schema.create(driver) }
     }
 }
 

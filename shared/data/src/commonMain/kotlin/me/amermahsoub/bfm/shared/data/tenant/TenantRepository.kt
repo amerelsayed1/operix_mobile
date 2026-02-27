@@ -44,10 +44,7 @@ class TenantRepository(
             .asFlow()
             .mapToOneOrNull(Dispatchers.Default)
             .map { jsonString ->
-                jsonString?.let {
-                    // Stored JSON is the full bootstrap response
-                    json.decodeFromString<TenantBootstrapResponse>(it).tenant
-                }
+                jsonString?.let { json.decodeFromString<TenantConfig>(it) }
             }
             .distinctUntilChanged()
 
@@ -55,7 +52,7 @@ class TenantRepository(
         getCachedConfig(slug).first()
 
     suspend fun refreshConfig(slug: String): TenantConfig {
-        val response = apiService.fetchBootstrap(slug)
+        val response = apiService.fetchTenantConfig(slug)
 
         withContext(Dispatchers.Default) {
             queries.upsertTenantConfig(
@@ -63,11 +60,23 @@ class TenantRepository(
                 json = json.encodeToString(response),
                 updated_at = nowIso(),
                 config_etag = null,
-                config_version = response.app.minVersion,
+                config_version = null,
             )
         }
 
-        return response.tenant
+        return response
+    }
+
+    suspend fun clearSelectedTenant() {
+        withContext(Dispatchers.Default) {
+            queries.deleteSelectedTenant()
+        }
+    }
+
+    suspend fun clearTenantConfig(slug: String) {
+        withContext(Dispatchers.Default) {
+            queries.deleteTenantConfigBySlug(slug)
+        }
     }
 
     suspend fun clearTenantData(slug: String) {

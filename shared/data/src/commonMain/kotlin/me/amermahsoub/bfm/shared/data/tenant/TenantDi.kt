@@ -2,13 +2,16 @@ package me.amermahsoub.bfm.shared.data.tenant
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import me.amermahsoub.bfm.shared.data.db.BfmDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-private const val DEFAULT_BASE_URL = "https://example-pos-api.com"
+private const val DEFAULT_BASE_URL = "http://localhost:8000"
 
 fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
     single {
@@ -24,6 +27,10 @@ fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
         HttpClient(platformHttpClientEngine()) {
             install(ContentNegotiation) {
                 json(appJson)
+            }
+            install(Logging) {
+                logger = Logger.SIMPLE
+                level = LogLevel.INFO
             }
         }
     }
