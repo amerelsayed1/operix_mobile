@@ -142,6 +142,22 @@ location of your Java installation."
     fi
 fi
 
+# Work around Kotlin/Gradle script parser incompatibility with Java 25.x.
+JAVA_VERSION_OUTPUT=$("$JAVACMD" -version 2>&1 | head -n 1)
+JAVA_VERSION_MAJOR=$(printf '%s
+' "$JAVA_VERSION_OUTPUT" | sed -n 's/.*version "\([0-9][0-9]*\)\..*/\1/p')
+if [ -n "$JAVA_VERSION_MAJOR" ] && [ "$JAVA_VERSION_MAJOR" -ge 25 ] 2>/dev/null ; then
+    if [ -n "$JAVA21_HOME" ] && [ -x "$JAVA21_HOME/bin/java" ] ; then
+        JAVA_HOME=$JAVA21_HOME
+        JAVACMD=$JAVA_HOME/bin/java
+        warn "Detected Java $JAVA_VERSION_MAJOR; switching Gradle runtime to JAVA21_HOME=$JAVA_HOME"
+    elif [ -x "$HOME/.local/share/mise/installs/java/21.0.2/bin/java" ] ; then
+        JAVA_HOME="$HOME/.local/share/mise/installs/java/21.0.2"
+        JAVACMD=$JAVA_HOME/bin/java
+        warn "Detected Java $JAVA_VERSION_MAJOR; switching Gradle runtime to $JAVA_HOME"
+    fi
+fi
+
 # Increase the maximum file descriptors if we can.
 if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then
     case $MAX_FD in #(
