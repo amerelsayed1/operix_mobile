@@ -8,6 +8,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -34,10 +35,18 @@ class TenantApiService(
 
     suspend fun login(username: String, password: String): LoginResponse {
         return try {
-            httpClient.post(urlBuilder.login()) {
+            val response = httpClient.post(urlBuilder.login()) {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequest(username, password))
-            }.body()
+            }
+
+            when {
+                response.status.value == 401 -> throw RuntimeException("Invalid email or password.")
+                !response.status.isSuccess() -> throw RuntimeException("Login failed: ${response.status}")
+                else -> response.body()
+            }
+        } catch (e: RuntimeException) {
+            throw e
         } catch (e: Throwable) {
             throw RuntimeException("Login failed: ${e.message}")
         }
