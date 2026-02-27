@@ -9,6 +9,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.utils.io.errors.IOException
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class TenantApiService(
@@ -53,7 +54,46 @@ sealed class TenantConfigLoadException : RuntimeException() {
 data class LoginRequest(val username: String, val password: String)
 
 @Serializable
-data class LoginResponse(val token: String, val employeeName: String)
+data class LoginResponse(
+    val token: String,
+    @SerialName("token_type") val tokenType: String,
+    @SerialName("expires_in") val expiresIn: Long,
+    val user: LoginUser,
+    val tenant: LoginTenant,
+    @SerialName("redirect_to") val redirectTo: String,
+)
+
+@Serializable
+data class LoginUser(
+    val id: Long,
+    val name: String,
+    val email: String,
+    @SerialName("business_name") val businessName: String? = null,
+    @SerialName("business_logo") val businessLogo: String? = null,
+    @SerialName("default_currency") val defaultCurrency: String? = null,
+    @SerialName("theme_mode") val themeMode: String? = null,
+    @SerialName("theme_primary_color") val themePrimaryColor: String? = null,
+    val role: LoginUserRole,
+    @SerialName("role_id") val roleId: Long,
+)
+
+@Serializable
+data class LoginUserRole(
+    val id: Long,
+    val name: String,
+)
+
+@Serializable
+data class LoginTenant(
+    val id: Long,
+    val name: String,
+    val slug: String,
+    @SerialName("currency_code") val currencyCode: String,
+    val timezone: String,
+    val locale: String,
+    @SerialName("theme_primary_color") val themePrimaryColor: String? = null,
+    @SerialName("logo_url") val logoUrl: String? = null,
+)
 
 
 private fun TenantConfigApiResponse.toTenantConfig(): TenantConfig = TenantConfig(
