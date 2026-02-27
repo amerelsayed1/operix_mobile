@@ -25,7 +25,6 @@ fun TenantSlugScreen(
     state: TenantSlugUiState,
     onSlugChange: (String) -> Unit,
     onContinue: () -> Unit,
-    onClear: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -101,17 +100,6 @@ fun TenantSlugScreen(
                 Text(if (state.isSaving) "Saving..." else "Continue")
             }
 
-            if (state.slugText.isNotEmpty()) {
-                Button(
-                    onClick = onClear,
-                    enabled = !state.isSaving,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .widthIn(min = 220.dp, max = 420.dp),
-                ) {
-                    Text("Clear")
-                }
-            }
         }
     }
 }

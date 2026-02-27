@@ -69,7 +69,6 @@ fun App() {
                                 screen = AppScreen.LOGIN
                             }
                         },
-                        onClear = tenantSlugStateHolder::clear,
                     )
 
                     AppScreen.LOGIN -> LoginScreen(
