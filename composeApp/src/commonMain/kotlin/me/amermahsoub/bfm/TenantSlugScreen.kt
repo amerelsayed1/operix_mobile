@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -73,12 +74,13 @@ fun TenantSlugScreen(
                     placeholder = { Text("e.g. tech-innovations") },
                     trailingIcon = {
                         if (state.slugText.isNotEmpty()) {
-                            IconButton(onClick = { onSlugChange("") }) {
+                            IconButton(onClick = { onSlugChange("") }, enabled = !state.isSaving) {
                                 Text("×")
                             }
                         }
                     },
                     singleLine = true,
+                    enabled = !state.isSaving,
                     keyboardOptions = KeyboardOptions(
                         autoCorrect = false,
                         keyboardType = KeyboardType.Text,
@@ -97,7 +99,11 @@ fun TenantSlugScreen(
                     .align(Alignment.CenterHorizontally)
                     .widthIn(min = 220.dp, max = 420.dp),
             ) {
-                Text(if (state.isSaving) "Saving..." else "Continue")
+                if (state.isSaving) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.widthIn(max = 16.dp))
+                } else {
+                    Text("Continue")
+                }
             }
 
         }

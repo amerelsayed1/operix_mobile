@@ -8,19 +8,25 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.Serializable
 
 class TenantApiService(
     private val httpClient: HttpClient,
     private val urlBuilder: TenantAwareApiUrlBuilder,
 ) {
-    suspend fun fetchBootstrap(slug: String): TenantBootstrapResponse {
+    suspend fun fetchTenantConfig(slug: String): TenantConfig {
         return try {
-            httpClient.get(urlBuilder.bootstrap(slug)).body()
+            httpClient.get(urlBuilder.tenantConfig(slug)).body()
         } catch (e: ClientRequestException) {
-            throw RuntimeException("Unable to connect tenant '$slug': ${e.response.status}")
+            if (e.response.status.value == 404) {
+                throw TenantConfigLoadException.NotFound
+            }
+            throw TenantConfigLoadException.Unknown
+        } catch (e: IOException) {
+            throw TenantConfigLoadException.Network
         } catch (e: Throwable) {
-            throw RuntimeException("Unable to load tenant config: ${e.message}")
+            throw TenantConfigLoadException.Unknown
         }
     }
 
@@ -34,6 +40,12 @@ class TenantApiService(
             throw RuntimeException("Login failed: ${e.message}")
         }
     }
+}
+
+sealed class TenantConfigLoadException : RuntimeException() {
+    data object NotFound : TenantConfigLoadException()
+    data object Network : TenantConfigLoadException()
+    data object Unknown : TenantConfigLoadException()
 }
 
 @Serializable

@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import me.amermahsoub.bfm.shared.data.tenant.TenantConfigLoadException
 import me.amermahsoub.bfm.shared.data.tenant.TenantContext
 import me.amermahsoub.bfm.shared.data.tenant.TenantRepository
 
@@ -48,7 +49,7 @@ class TenantSlugStateHolder(
         )
     }
 
-    fun saveAndContinue(onComplete: () -> Unit) {
+    fun loadTenantAndContinue(onComplete: () -> Unit) {
         val slug = normalizeSlug(_state.value.slugText)
         val validationError = validateSlugOrNull(slug)
         if (validationError != null) {
@@ -59,24 +60,45 @@ class TenantSlugStateHolder(
         scope.launch {
             _state.value = _state.value.copy(isSaving = true, errorMessage = null)
             try {
+                tenantRepository.refreshConfig(slug)
                 tenantRepository.selectTenant(slug)
                 tenantContext.setTenantSlug(slug)
                 _state.value = _state.value.copy(slugText = slug, isSaving = false)
                 onComplete()
+            } catch (e: TenantConfigLoadException.NotFound) {
+                _state.value = _state.value.copy(
+                    isSaving = false,
+                    errorMessage = "Tenant not found. Check the slug.",
+                )
+            } catch (e: TenantConfigLoadException.Network) {
+                _state.value = _state.value.copy(
+                    isSaving = false,
+                    errorMessage = "Cannot reach server. Check connection.",
+                )
             } catch (e: Throwable) {
                 _state.value = _state.value.copy(
                     isSaving = false,
-                    errorMessage = e.message ?: "Unable to save tenant slug.",
+                    errorMessage = "Failed to load tenant config.",
                 )
             }
         }
     }
 
-    fun clear() {
+    fun clearInput() {
+        _state.value = _state.value.copy(slugText = "", errorMessage = null)
+    }
+
+    fun resetTenant(onComplete: () -> Unit) {
         scope.launch {
+            val currentSlug = tenantRepository.getSelectedTenantSlug().first()
+            if (!currentSlug.isNullOrBlank()) {
+                tenantRepository.clearTenantData(currentSlug)
+                tenantRepository.clearTenantConfig(currentSlug)
+            }
             tenantRepository.clearSelectedTenant()
             tenantContext.setTenantSlug(null)
             _state.value = TenantSlugUiState()
+            onComplete()
         }
     }
 

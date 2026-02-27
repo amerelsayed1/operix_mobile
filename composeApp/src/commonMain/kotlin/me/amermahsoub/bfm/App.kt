@@ -49,7 +49,11 @@ fun App() {
     val snackbar = remember { SnackbarHostState() }
     val tenantSlugStateHolder = remember { TenantSlugStateHolder(tenantRepository, tenantContext, scope) }
     val tenantSlugUiState by tenantSlugStateHolder.state.collectAsState()
-    var screen by remember { mutableStateOf(AppScreen.TENANT_SLUG) }
+    var screen by remember(selectedSlug, tenantConfig) {
+        mutableStateOf(
+            if (!selectedSlug.isNullOrBlank() && tenantConfig != null) AppScreen.LOGIN else AppScreen.TENANT_SLUG
+        )
+    }
 
     MaterialTheme {
         Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
@@ -65,7 +69,7 @@ fun App() {
                         state = tenantSlugUiState,
                         onSlugChange = tenantSlugStateHolder::onSlugChange,
                         onContinue = {
-                            tenantSlugStateHolder.saveAndContinue {
+                            tenantSlugStateHolder.loadTenantAndContinue {
                                 screen = AppScreen.LOGIN
                             }
                         },
@@ -75,7 +79,11 @@ fun App() {
                         tenantName = tenantConfig?.name,
                         currency = tenantConfig?.currency,
                         enabled = !selectedSlug.isNullOrBlank() && tenantConfig != null,
-                        onChangeTenant = { screen = AppScreen.TENANT_SLUG },
+                        onChangeTenant = {
+                            tenantSlugStateHolder.resetTenant {
+                                screen = AppScreen.TENANT_SLUG
+                            }
+                        },
                         onLogin = { username, password ->
                             scope.launch {
                                 if (tenantConfig == null) {
@@ -96,7 +104,11 @@ fun App() {
                         currency = tenantConfig?.currency ?: "",
                         taxIncluded = tenantConfig?.pos?.taxIncluded ?: false,
                         receiptCharsPerLine = tenantConfig?.pos?.receiptCharsPerLine ?: 42,
-                        onSwitchTenant = { screen = AppScreen.TENANT_SLUG },
+                        onSwitchTenant = {
+                            tenantSlugStateHolder.resetTenant {
+                                screen = AppScreen.TENANT_SLUG
+                            }
+                        },
                     )
                 }
             }
