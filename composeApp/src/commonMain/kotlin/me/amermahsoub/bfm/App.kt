@@ -37,7 +37,7 @@ private enum class AppScreen { TENANT_SETUP, LOGIN, POS }
 
 @Composable
 fun App() {
-    val koin = GlobalContext.get().koin
+    val koin = GlobalContext.get()
     val tenantRepository = remember { koin.get<TenantRepository>() }
     val tenantContext = remember { koin.get<TenantContext>() }
     val configStore = remember { koin.get<ConfigStore>() }

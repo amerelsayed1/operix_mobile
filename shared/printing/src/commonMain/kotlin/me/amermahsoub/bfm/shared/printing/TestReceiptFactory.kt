@@ -1,17 +1,21 @@
 package me.amermahsoub.bfm.shared.printing
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 object TestReceiptFactory {
+
+    @OptIn(ExperimentalTime::class)
     fun create(): Receipt {
         return Receipt(
             storeName = "BFM Market",
             storeAddress = "123 POS Street",
             storePhone = "+1-555-0100",
             invoiceNumber = "12345",
-            dateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+            dateTime = Clock.System.now()
+                .toLocalDateTime(TimeZone.currentSystemDefault()),
             cashierName = "Ahmed",
             items = listOf(
                 ReceiptItem(name = "Product A", qty = "2", unitPriceCents = 1_000, totalLineCents = 2_000),
