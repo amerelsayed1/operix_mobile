@@ -52,30 +52,35 @@ fun TenantSlugScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Text(
-                text = "Organization Slug",
-                style = MaterialTheme.typography.labelLarge,
-            )
-            OutlinedTextField(
-                value = state.slugText,
-                onValueChange = onSlugChange,
+            Column(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .widthIn(min = 280.dp, max = 420.dp),
-                placeholder = { Text("acme-corp") },
-                prefix = { Text("http://localhost:5173/") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    autoCorrect = false,
-                    keyboardType = KeyboardType.Text,
-                ),
-            )
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "Organization Slug",
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                OutlinedTextField(
+                    value = state.slugText,
+                    onValueChange = onSlugChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("acme-corp") },
+                    prefix = { Text("http://localhost:5173/") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Text,
+                    ),
+                )
 
-            Text(
-                text = "Example: acme-corp, tech-innovations, global-trading",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                Text(
+                    text = "Example: acme-corp, tech-innovations, global-trading",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             Button(
                 onClick = onContinue,
