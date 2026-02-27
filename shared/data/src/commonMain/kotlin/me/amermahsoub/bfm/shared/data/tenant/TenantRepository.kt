@@ -70,6 +70,13 @@ class TenantRepository(
         return response.tenant
     }
 
+
+    suspend fun clearSelectedTenant() {
+        withContext(Dispatchers.Default) {
+            queries.deleteSelectedTenant()
+        }
+    }
+
     suspend fun clearTenantData(slug: String) {
         withContext(Dispatchers.Default) {
             queries.transaction {

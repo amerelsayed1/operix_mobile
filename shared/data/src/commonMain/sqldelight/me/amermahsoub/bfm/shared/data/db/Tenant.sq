@@ -55,3 +55,7 @@ DELETE FROM product_cache WHERE tenant_slug = ?;
 
 deleteOrderCacheByTenant:
 DELETE FROM order_cache WHERE tenant_slug = ?;
+
+
+deleteSelectedTenant:
+DELETE FROM selected_tenant WHERE id = 1;

@@ -26,7 +26,6 @@ fun TenantSlugScreen(
     onContinue: () -> Unit,
     onClear: () -> Unit,
 ) {
-    val trimmedSlug = state.slugText.trim()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -66,14 +65,17 @@ fun TenantSlugScreen(
                     value = state.slugText,
                     onValueChange = onSlugChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("acme-corp") },
-                    prefix = { Text("http://localhost:5173/") },
+                    placeholder = { Text("e.g. tech-innovations") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         autoCorrect = false,
                         keyboardType = KeyboardType.Text,
                     ),
                 )
+
+                if (state.errorMessage != null) {
+                    Text(state.errorMessage, color = MaterialTheme.colorScheme.error)
+                }
 
                 Text(
                     text = "Example: acme-corp, tech-innovations, global-trading",
@@ -84,7 +86,7 @@ fun TenantSlugScreen(
 
             Button(
                 onClick = onContinue,
-                enabled = trimmedSlug.isNotBlank() && !state.isSaving,
+                enabled = state.isSlugValid && !state.isSaving,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .widthIn(min = 220.dp, max = 420.dp),
@@ -104,9 +106,7 @@ fun TenantSlugScreen(
                 }
             }
 
-            if (state.errorMessage != null) {
-                Text(state.errorMessage, color = MaterialTheme.colorScheme.error)
-            }
+
         }
     }
 }

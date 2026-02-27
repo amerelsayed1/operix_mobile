@@ -9,11 +9,17 @@ import kotlinx.coroutines.launch
 import me.amermahsoub.bfm.shared.data.tenant.TenantContext
 import me.amermahsoub.bfm.shared.data.tenant.TenantRepository
 
+private val TENANT_SLUG_REGEX = Regex("^[a-z0-9]+(?:-[a-z0-9]+)*$")
+private const val INVALID_SLUG_MESSAGE =
+    "Invalid slug. Use lowercase letters, numbers, and hyphens only."
+
 data class TenantSlugUiState(
     val slugText: String = "",
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
-)
+) {
+    val isSlugValid: Boolean = slugText.isNotBlank() && TENANT_SLUG_REGEX.matches(slugText)
+}
 
 class TenantSlugStateHolder(
     private val tenantRepository: TenantRepository,
@@ -26,17 +32,29 @@ class TenantSlugStateHolder(
     init {
         scope.launch {
             val cachedSlug = tenantRepository.getSelectedTenantSlug().first().orEmpty()
-            _state.value = _state.value.copy(slugText = cachedSlug)
+            val normalizedSlug = normalizeSlug(cachedSlug)
+            _state.value = _state.value.copy(
+                slugText = normalizedSlug,
+                errorMessage = validateSlugOrNull(normalizedSlug),
+            )
         }
     }
 
     fun onSlugChange(value: String) {
-        _state.value = _state.value.copy(slugText = value, errorMessage = null)
+        val normalizedSlug = normalizeSlug(value)
+        _state.value = _state.value.copy(
+            slugText = normalizedSlug,
+            errorMessage = validateSlugOrNull(normalizedSlug),
+        )
     }
 
     fun saveAndContinue(onComplete: () -> Unit) {
-        val slug = _state.value.slugText.trim()
-        if (slug.isBlank()) return
+        val slug = normalizeSlug(_state.value.slugText)
+        val validationError = validateSlugOrNull(slug)
+        if (validationError != null) {
+            _state.value = _state.value.copy(errorMessage = validationError, slugText = slug)
+            return
+        }
 
         scope.launch {
             _state.value = _state.value.copy(isSaving = true, errorMessage = null)
@@ -55,6 +73,29 @@ class TenantSlugStateHolder(
     }
 
     fun clear() {
-        _state.value = _state.value.copy(slugText = "", errorMessage = null)
+        scope.launch {
+            tenantRepository.clearSelectedTenant()
+            tenantContext.setTenantSlug(null)
+            _state.value = TenantSlugUiState()
+        }
+    }
+
+    private fun normalizeSlug(rawInput: String): String {
+        val trimmed = rawInput.trim().lowercase()
+        if (trimmed.isBlank()) return ""
+
+        val withoutQuery = trimmed.substringBefore('?').substringBefore('#')
+        val candidate = withoutQuery
+            .split('/')
+            .lastOrNull { it.isNotBlank() }
+            ?: withoutQuery
+
+        return candidate.trim()
+    }
+
+    private fun validateSlugOrNull(slug: String): String? = when {
+        slug.isBlank() -> null
+        TENANT_SLUG_REGEX.matches(slug) -> null
+        else -> INVALID_SLUG_MESSAGE
     }
 }
