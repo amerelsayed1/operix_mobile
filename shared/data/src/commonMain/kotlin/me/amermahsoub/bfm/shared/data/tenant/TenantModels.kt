@@ -39,3 +39,36 @@ data class AppConfig(
     @SerialName("min_version") val minVersion: String,
     @SerialName("force_update") val forceUpdate: Boolean,
 )
+
+@Serializable
+data class TenantConfigApiResponse(
+    val tenant: TenantApiInfo,
+    val theme: TenantThemeApiInfo,
+    val currency: TenantCurrencyApiInfo,
+)
+
+@Serializable
+data class TenantApiInfo(
+    val id: Long,
+    val name: String,
+    val slug: String,
+    @SerialName("logo_url") val logoUrl: String? = null,
+)
+
+@Serializable
+data class TenantThemeApiInfo(
+    val primaryColor: String? = null,
+    val secondaryColor: String? = null,
+    val accentColor: String? = null,
+    val backgroundColor: String? = null,
+    val textColor: String? = null,
+    val logoUrl: String? = null,
+    val faviconUrl: String? = null,
+)
+
+@Serializable
+data class TenantCurrencyApiInfo(
+    val code: String,
+    val name: String,
+    val symbol: String,
+)

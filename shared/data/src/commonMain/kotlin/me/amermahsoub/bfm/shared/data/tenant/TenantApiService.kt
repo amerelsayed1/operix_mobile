@@ -17,7 +17,8 @@ class TenantApiService(
 ) {
     suspend fun fetchTenantConfig(slug: String): TenantConfig {
         return try {
-            httpClient.get(urlBuilder.tenantConfig(slug)).body()
+            val response = httpClient.get(urlBuilder.tenantConfig(slug)).body<TenantConfigApiResponse>()
+            response.toTenantConfig()
         } catch (e: ClientRequestException) {
             if (e.response.status.value == 404) {
                 throw TenantConfigLoadException.NotFound
@@ -53,3 +54,17 @@ data class LoginRequest(val username: String, val password: String)
 
 @Serializable
 data class LoginResponse(val token: String, val employeeName: String)
+
+
+private fun TenantConfigApiResponse.toTenantConfig(): TenantConfig = TenantConfig(
+    slug = tenant.slug,
+    name = tenant.name,
+    currency = currency.code,
+    timezone = "UTC",
+    localeDefault = "en",
+    pos = PosConfig(
+        taxIncluded = false,
+        defaultTaxRate = 0.0,
+        receiptCharsPerLine = 42,
+    ),
+)
