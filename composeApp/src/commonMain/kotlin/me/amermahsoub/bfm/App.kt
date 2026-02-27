@@ -1,15 +1,23 @@
 package me.amermahsoub.bfm
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -21,7 +29,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -77,6 +89,7 @@ fun App() {
 
                     AppScreen.LOGIN -> LoginScreen(
                         tenantName = tenantConfig?.name,
+                        tenantSlug = selectedSlug,
                         currency = tenantConfig?.currency,
                         enabled = !selectedSlug.isNullOrBlank() && tenantConfig != null,
                         onChangeTenant = {
@@ -119,6 +132,7 @@ fun App() {
 @Composable
 private fun LoginScreen(
     tenantName: String?,
+    tenantSlug: String?,
     currency: String?,
     enabled: Boolean,
     onChangeTenant: () -> Unit,
@@ -127,26 +141,82 @@ private fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Login", style = MaterialTheme.typography.headlineSmall)
-        Text("Tenant: ${tenantName ?: "Not selected"}")
-        Text("Currency: ${currency ?: "-"}")
-        Text("Logo: [placeholder]")
-        OutlinedTextField(username, { username = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth(), enabled = enabled)
-        OutlinedTextField(
-            password,
-            { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            enabled = enabled,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onChangeTenant) { Text("Change tenant") }
-            Button(onClick = { onLogin(username, password) }, enabled = enabled) { Text("Login") }
-        }
-        if (!enabled) {
-            Text("Login is disabled until tenant config is available.")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF5B7BE8), Color(0xFF6B3FB3)),
+                ),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 420.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F7FB)),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color(0xFF5B7BE8), Color(0xFF6B3FB3)),
+                        ),
+                    )
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = tenantName ?: "X Soft",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = tenantSlug ?: "x-soft",
+                        color = Color(0xFFDCE6FF),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Login", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.align(Alignment.CenterHorizontally))
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Email Address") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = enabled,
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = enabled,
+                    singleLine = true,
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = onChangeTenant) { Text("Change organization") }
+                    TextButton(onClick = {}, enabled = false) { Text("Remember me") }
+                }
+                Button(onClick = { onLogin(username, password) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+                    Text("Login")
+                }
+                if (!enabled) {
+                    Text("Login is disabled until tenant config is available.")
+                }
+            }
         }
     }
 }
