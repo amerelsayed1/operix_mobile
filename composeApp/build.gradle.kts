@@ -42,9 +42,19 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
+        val desktopMain by creating {
+            dependencies {
+                implementation("org.slf4j:slf4j-api:2.0.16")
+                implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+                runtimeOnly("ch.qos.logback:logback-classic:1.5.6")
+            }
+        }
+        jvmMain {
+            dependsOn(desktopMain)
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                implementation(libs.kotlinx.coroutinesSwing)
+            }
         }
     }
 }

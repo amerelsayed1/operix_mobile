@@ -52,3 +52,12 @@ From Login/POS screen, use **Change tenant / Switch Tenant**:
 
 ## Printing note
 Network thermal printers typically use RAW TCP on port `9100`.
+
+## Desktop logging
+- Logback config is loaded from `composeApp/src/desktopMain/resources/logback.xml`.
+- Default levels:
+  - `root` = `INFO`
+  - `me.amermahsoub` = `DEBUG`
+- To change log level, edit `<root level="...">` or the package logger level in `logback.xml`.
+- File logging is optional: uncomment `<appender-ref ref="ROLLING_FILE" />` in `logback.xml`.
+- When enabled, log files are written to `./logs/` (relative to the desktop app working directory).
