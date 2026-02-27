@@ -34,8 +34,7 @@ fun TenantSlugScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 420.dp),
+                .widthIn(max = 560.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
@@ -60,7 +59,9 @@ fun TenantSlugScreen(
             OutlinedTextField(
                 value = state.slugText,
                 onValueChange = onSlugChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(min = 280.dp, max = 420.dp),
                 placeholder = { Text("acme-corp") },
                 prefix = { Text("http://localhost:5173/") },
                 singleLine = true,
@@ -79,7 +80,9 @@ fun TenantSlugScreen(
             Button(
                 onClick = onContinue,
                 enabled = trimmedSlug.isNotBlank() && !state.isSaving,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(min = 220.dp, max = 420.dp),
             ) {
                 Text(if (state.isSaving) "Saving..." else "Continue")
             }
@@ -88,7 +91,9 @@ fun TenantSlugScreen(
                 Button(
                     onClick = onClear,
                     enabled = !state.isSaving,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .widthIn(min = 220.dp, max = 420.dp),
                 ) {
                     Text("Clear")
                 }
