@@ -29,11 +29,10 @@ import me.amermahsoub.bfm.shared.data.tenant.ConfigStore
 import me.amermahsoub.bfm.shared.data.tenant.TenantApiService
 import me.amermahsoub.bfm.shared.data.tenant.TenantContext
 import me.amermahsoub.bfm.shared.data.tenant.TenantRepository
-import me.amermahsoub.bfm.shared.data.tenant.isValidTenantSlug
 import me.amermahsoub.bfm.shared.printing.TestReceiptFactory
 import org.koin.core.context.GlobalContext
 
-private enum class AppScreen { TENANT_SETUP, LOGIN, POS }
+private enum class AppScreen { TENANT_SLUG, LOGIN, POS }
 
 @Composable
 fun App() {
@@ -48,9 +47,9 @@ fun App() {
 
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var screen by remember(selectedSlug) {
-        mutableStateOf(if (selectedSlug.isNullOrBlank()) AppScreen.TENANT_SETUP else AppScreen.LOGIN)
-    }
+    val tenantSlugStateHolder = remember { TenantSlugStateHolder(tenantRepository, tenantContext, scope) }
+    val tenantSlugUiState by tenantSlugStateHolder.state.collectAsState()
+    var screen by remember { mutableStateOf(AppScreen.TENANT_SLUG) }
 
     MaterialTheme {
         Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
@@ -62,43 +61,22 @@ fun App() {
                     .padding(16.dp),
             ) {
                 when (screen) {
-                    AppScreen.TENANT_SETUP -> TenantSetupScreen(
-                        onConnect = { slug ->
-                            scope.launch {
-                                if (!isValidTenantSlug(slug)) {
-                                    snackbar.showSnackbar("Invalid slug format. Use lowercase letters, numbers and dashes (3-50 chars).")
-                                    return@launch
-                                }
-                                val previousSlug = selectedSlug
-                                try {
-                                    tenantRepository.refreshConfig(slug)
-                                    tenantRepository.selectTenant(slug)
-                                    tenantContext.setTenantSlug(slug)
-                                    if (!previousSlug.isNullOrBlank() && previousSlug != slug) {
-                                        tenantRepository.clearTenantData(previousSlug)
-                                    }
-                                    screen = AppScreen.LOGIN
-                                    snackbar.showSnackbar("Connected to tenant '$slug'.")
-                                } catch (e: Throwable) {
-                                    val cached = tenantRepository.getCachedConfigOnce(slug)
-                                    if (cached != null) {
-                                        tenantRepository.selectTenant(slug)
-                                        tenantContext.setTenantSlug(slug)
-                                        screen = AppScreen.LOGIN
-                                        snackbar.showSnackbar("Offline mode: using cached tenant config for '$slug'.")
-                                    } else {
-                                        snackbar.showSnackbar("Unable to fetch tenant config and no cache found for '$slug'.")
-                                    }
-                                }
+                    AppScreen.TENANT_SLUG -> TenantSlugScreen(
+                        state = tenantSlugUiState,
+                        onSlugChange = tenantSlugStateHolder::onSlugChange,
+                        onContinue = {
+                            tenantSlugStateHolder.saveAndContinue {
+                                screen = AppScreen.LOGIN
                             }
                         },
+                        onClear = tenantSlugStateHolder::clear,
                     )
 
                     AppScreen.LOGIN -> LoginScreen(
                         tenantName = tenantConfig?.name,
                         currency = tenantConfig?.currency,
                         enabled = !selectedSlug.isNullOrBlank() && tenantConfig != null,
-                        onChangeTenant = { screen = AppScreen.TENANT_SETUP },
+                        onChangeTenant = { screen = AppScreen.TENANT_SLUG },
                         onLogin = { username, password ->
                             scope.launch {
                                 if (tenantConfig == null) {
@@ -119,28 +97,10 @@ fun App() {
                         currency = tenantConfig?.currency ?: "",
                         taxIncluded = tenantConfig?.pos?.taxIncluded ?: false,
                         receiptCharsPerLine = tenantConfig?.pos?.receiptCharsPerLine ?: 42,
-                        onSwitchTenant = { screen = AppScreen.TENANT_SETUP },
+                        onSwitchTenant = { screen = AppScreen.TENANT_SLUG },
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TenantSetupScreen(onConnect: (String) -> Unit) {
-    var slug by remember { mutableStateOf("") }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Tenant Setup", style = MaterialTheme.typography.headlineSmall)
-        OutlinedTextField(
-            value = slug,
-            onValueChange = { slug = it.trim().lowercase() },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Tenant Slug") },
-            supportingText = { Text("Format: lowercase letters, numbers, dash (3-50)") },
-        )
-        Button(onClick = { onConnect(slug) }) {
-            Text("Connect")
         }
     }
 }
