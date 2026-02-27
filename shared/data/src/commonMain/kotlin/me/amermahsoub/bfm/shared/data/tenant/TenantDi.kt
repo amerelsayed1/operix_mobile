@@ -2,6 +2,9 @@ package me.amermahsoub.bfm.shared.data.tenant
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import me.amermahsoub.bfm.shared.data.db.BfmDatabase
@@ -24,6 +27,10 @@ fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
         HttpClient(platformHttpClientEngine()) {
             install(ContentNegotiation) {
                 json(appJson)
+            }
+            install(Logging) {
+                logger = Logger.SIMPLE
+                level = LogLevel.INFO
             }
         }
     }
