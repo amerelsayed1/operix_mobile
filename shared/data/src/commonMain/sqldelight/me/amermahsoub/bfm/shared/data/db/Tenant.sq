@@ -1,0 +1,57 @@
+CREATE TABLE selected_tenant (
+    id INTEGER NOT NULL PRIMARY KEY,
+    tenant_slug TEXT NOT NULL,
+    selected_at TEXT NOT NULL
+);
+
+CREATE TABLE tenant_config (
+    tenant_slug TEXT NOT NULL PRIMARY KEY,
+    json TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    config_etag TEXT,
+    config_version TEXT
+);
+
+CREATE TABLE employee_cache (
+    id TEXT NOT NULL,
+    tenant_slug TEXT NOT NULL,
+    json TEXT NOT NULL,
+    PRIMARY KEY(id, tenant_slug)
+);
+
+CREATE TABLE product_cache (
+    id TEXT NOT NULL,
+    tenant_slug TEXT NOT NULL,
+    json TEXT NOT NULL,
+    PRIMARY KEY(id, tenant_slug)
+);
+
+CREATE TABLE order_cache (
+    id TEXT NOT NULL,
+    tenant_slug TEXT NOT NULL,
+    json TEXT NOT NULL,
+    PRIMARY KEY(id, tenant_slug)
+);
+
+selectTenantSlug:
+SELECT tenant_slug FROM selected_tenant WHERE id = 1;
+
+upsertSelectedTenant:
+INSERT OR REPLACE INTO selected_tenant(id, tenant_slug, selected_at)
+VALUES (1, ?, ?);
+
+upsertTenantConfig:
+INSERT OR REPLACE INTO tenant_config(tenant_slug, json, updated_at, config_etag, config_version)
+VALUES (?, ?, ?, ?, ?);
+
+selectTenantConfigBySlug:
+SELECT json FROM tenant_config WHERE tenant_slug = ?;
+
+deleteEmployeeCacheByTenant:
+DELETE FROM employee_cache WHERE tenant_slug = ?;
+
+deleteProductCacheByTenant:
+DELETE FROM product_cache WHERE tenant_slug = ?;
+
+deleteOrderCacheByTenant:
+DELETE FROM order_cache WHERE tenant_slug = ?;
