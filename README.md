@@ -1,48 +1,54 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Desktop (JVM).
+# BFM KMP App
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+Kotlin Multiplatform app targeting:
+- Android (Jetpack Compose)
+- Desktop (Compose Multiplatform JVM)
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+## Shared modules
+- `:shared:core`
+- `:shared:domain`
+- `:shared:data` (tenant bootstrap + SQLDelight + Ktor)
+- `:shared:printing` (ESC/POS network printing)
 
-### Build and Run Android Application
+## Tenant bootstrapping flow
+1. First run shows **Tenant Setup** screen.
+2. Enter tenant slug (`^[a-z0-9-]{3,50}$`) and press **Connect**.
+3. App fetches `GET /api/v1/{tenant_slug}/bootstrap`.
+4. Config is cached in SQLDelight (`selected_tenant`, `tenant_config`) before login.
+5. Login is enabled only when tenant + config are available.
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+If offline:
+- Cached tenant config exists -> login allowed (offline mode message shown).
+- No cached config -> login blocked with clear error.
 
-### Build and Run Desktop (JVM) Application
+## Switching tenant
+From Login/POS screen, use **Change tenant / Switch Tenant**:
+- Re-opens tenant setup.
+- Clears tenant-scoped cache tables (`employee_cache`, `product_cache`, `order_cache`) for previous tenant.
+- App-level settings are preserved.
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+## Running
+### Android
+```bash
+./gradlew :composeApp:installDebug
+```
 
-### Build and Run iOS Application
+### Desktop
+```bash
+./gradlew :composeApp:run
+```
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+## Testing checklist
+### First run (no cache)
+- Start app -> Tenant Setup appears.
+- Enter valid slug and connect online -> navigates to Login.
 
----
+### Second run (cache exists)
+- Restart app -> opens Login directly.
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+### Offline behavior
+- After successful bootstrap once, disconnect network and restart -> Login still works with cached tenant config.
+- Clear DB, disconnect network, start app -> Tenant Setup cannot proceed and Login remains blocked.
+
+## Printing note
+Network thermal printers typically use RAW TCP on port `9100`.

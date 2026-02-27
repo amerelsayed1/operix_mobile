@@ -1,0 +1,41 @@
+package me.amermahsoub.bfm.shared.data.tenant
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class TenantBootstrapResponse(
+    val tenant: TenantConfig,
+    val features: TenantFeatures,
+    val app: AppConfig,
+)
+
+@Serializable
+data class TenantConfig(
+    val slug: String,
+    val name: String,
+    val currency: String,
+    val timezone: String,
+    @SerialName("locale_default") val localeDefault: String,
+    val pos: PosConfig,
+)
+
+@Serializable
+data class PosConfig(
+    @SerialName("tax_included") val taxIncluded: Boolean,
+    @SerialName("default_tax_rate") val defaultTaxRate: Double,
+    @SerialName("receipt_chars_per_line") val receiptCharsPerLine: Int,
+)
+
+@Serializable
+data class TenantFeatures(
+    val pos: Boolean,
+    val inventory: Boolean,
+    val accounting: Boolean,
+)
+
+@Serializable
+data class AppConfig(
+    @SerialName("min_version") val minVersion: String,
+    @SerialName("force_update") val forceUpdate: Boolean,
+)
