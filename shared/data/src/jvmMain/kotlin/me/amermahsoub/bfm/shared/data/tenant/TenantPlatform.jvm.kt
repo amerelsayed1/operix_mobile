@@ -19,3 +19,7 @@ actual fun platformTenantModule(): Module = module {
 }
 
 actual fun platformHttpClientEngine(): HttpClientEngine = CIO.create()
+
+actual fun defaultTenantBaseUrl(): String = "http://127.0.0.1:8000"
+
+actual fun normalizeTenantBaseUrl(baseUrl: String): String = baseUrl

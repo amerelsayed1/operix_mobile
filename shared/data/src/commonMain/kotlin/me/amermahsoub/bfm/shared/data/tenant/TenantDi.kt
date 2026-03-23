@@ -8,9 +8,7 @@ import me.amermahsoub.bfm.shared.data.db.BfmDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-private const val DEFAULT_BASE_URL = "https://example-pos-api.com"
-
-fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
+fun tenantBootstrapModule(baseUrl: String = defaultTenantBaseUrl()): Module = module {
     single {
         Json {
             ignoreUnknownKeys = true
@@ -18,21 +16,30 @@ fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
         }
     }
     single { TenantContext() }
+    single { SessionStore() }
     single { TenantAwareApiUrlBuilder(baseUrl, get()) }
     single {
         val appJson = get<Json>()
+        val sessionStore = get<SessionStore>()
+        val tenantContext = get<TenantContext>()
         HttpClient(platformHttpClientEngine()) {
             install(ContentNegotiation) {
                 json(appJson)
             }
+            install(TenantNetworkInterceptor) {
+                tokenProvider = { sessionStore.token }
+                tenantSlugProvider = { tenantContext.tenantSlug.value }
+            }
         }
     }
     single { BfmDatabase(get()) }
-    single { TenantApiService(get(), get()) }
-    single { TenantRepository(get(), get(), get()) }
+    single { TenantApiService(get(), get(), get()) }
+    single { TenantRepository(get(), get(), get(), get(), get()) }
     single { ConfigStore(get(), get()) }
     includes(platformTenantModule())
 }
 
 expect fun platformTenantModule(): Module
 expect fun platformHttpClientEngine(): io.ktor.client.engine.HttpClientEngine
+expect fun defaultTenantBaseUrl(): String
+expect fun normalizeTenantBaseUrl(baseUrl: String): String

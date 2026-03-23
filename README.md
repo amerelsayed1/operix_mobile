@@ -11,21 +11,18 @@ Kotlin Multiplatform app targeting:
 - `:shared:printing` (ESC/POS network printing)
 
 ## Tenant bootstrapping flow
-1. First run shows **Tenant Setup** screen.
-2. Enter tenant slug (`^[a-z0-9-]{3,50}$`) and press **Connect**.
-3. App fetches `GET /api/v1/{tenant_slug}/bootstrap`.
-4. Config is cached in SQLDelight (`selected_tenant`, `tenant_config`) before login.
-5. Login is enabled only when tenant + config are available.
+1. App opens directly to the **Login** screen.
+2. User enters company code / tenant slug together with identity and password.
+3. App resolves tenant config using tenant-aware endpoints and caches the selected tenant config locally.
+4. App logs in and boots the session (`login` + `me` + `permissions` + `config`).
+5. Home opens using the mockup-inspired tab shell.
 
 If offline:
-- Cached tenant config exists -> login allowed (offline mode message shown).
-- No cached config -> login blocked with clear error.
+- Cached tenant config exists -> login can continue using cached tenant context.
+- No cached config -> login is blocked with a clear error.
 
-## Switching tenant
-From Login/POS screen, use **Change tenant / Switch Tenant**:
-- Re-opens tenant setup.
-- Clears tenant-scoped cache tables (`employee_cache`, `product_cache`, `order_cache`) for previous tenant.
-- App-level settings are preserved.
+## App flow diagram
+See [docs/app-flow.md](docs/app-flow.md) for a drawn flow of direct login, session bootstrap, and the tabbed home screens.
 
 ## Running
 ### Android
@@ -39,16 +36,19 @@ From Login/POS screen, use **Change tenant / Switch Tenant**:
 ```
 
 ## Testing checklist
-### First run (no cache)
-- Start app -> Tenant Setup appears.
-- Enter valid slug and connect online -> navigates to Login.
-
-### Second run (cache exists)
-- Restart app -> opens Login directly.
+### Login flow
+- Start app -> Login appears immediately.
+- Enter valid company code, identity, and password -> navigates to Home.
 
 ### Offline behavior
-- After successful bootstrap once, disconnect network and restart -> Login still works with cached tenant config.
-- Clear DB, disconnect network, start app -> Tenant Setup cannot proceed and Login remains blocked.
+- After successful tenant resolution once, disconnect network and login again with cached company code -> login can continue using cached tenant config.
+- Clear DB, disconnect network, start app -> login cannot resolve tenant config and stays blocked.
 
 ## Printing note
 Network thermal printers typically use RAW TCP on port `9100`.
+
+
+## Localhost development
+- Desktop/JVM default base URL: `http://127.0.0.1:8000`
+- Android emulator default base URL: `http://10.0.2.2:8000`
+- If you pass a `localhost` base URL on Android, the shared tenant URL builder now normalizes it to `10.0.2.2` automatically.
