@@ -22,14 +22,20 @@ fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
     single { TenantAwareApiUrlBuilder(baseUrl, get()) }
     single {
         val appJson = get<Json>()
+        val sessionStore = get<SessionStore>()
+        val tenantContext = get<TenantContext>()
         HttpClient(platformHttpClientEngine()) {
             install(ContentNegotiation) {
                 json(appJson)
             }
+            install(TenantNetworkInterceptor) {
+                tokenProvider = { sessionStore.token }
+                tenantSlugProvider = { tenantContext.tenantSlug.value }
+            }
         }
     }
     single { BfmDatabase(get()) }
-    single { TenantApiService(get(), get(), get(), get()) }
+    single { TenantApiService(get(), get(), get()) }
     single { TenantRepository(get(), get(), get(), get(), get()) }
     single { ConfigStore(get(), get()) }
     includes(platformTenantModule())

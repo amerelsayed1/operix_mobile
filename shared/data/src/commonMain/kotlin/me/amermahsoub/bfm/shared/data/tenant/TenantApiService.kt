@@ -3,13 +3,11 @@ package me.amermahsoub.bfm.shared.data.tenant
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
-import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
@@ -24,7 +22,6 @@ class TenantApiService(
     private val httpClient: HttpClient,
     private val urlBuilder: TenantAwareApiUrlBuilder,
     private val json: Json,
-    private val sessionStore: SessionStore,
 ) {
     suspend fun fetchBootstrap(slug: String): TenantBootstrapResponse {
         val publicConfig = fetchPublicTenantConfig(slug)
@@ -62,15 +59,14 @@ class TenantApiService(
         }
 
     suspend fun logout() {
-        authorizedPost(urlBuilder.logout())
-        sessionStore.clear()
+        httpClient.post(urlBuilder.logout())
     }
 
     suspend fun fetchCurrentUser(): SessionUser =
-        decodeResponse(SessionUser.serializer()) { authorizedGet(urlBuilder.me()) }
+        decodeResponse(SessionUser.serializer()) { httpClient.get(urlBuilder.me()) }
 
     suspend fun fetchPermissions(): List<String> {
-        val payload = decodePayload { authorizedGet(urlBuilder.permissions()) }
+        val payload = decodePayload { httpClient.get(urlBuilder.permissions()) }
         return when (payload) {
             is JsonArray -> {
                 runCatching {
@@ -85,27 +81,16 @@ class TenantApiService(
     }
 
     suspend fun fetchProtectedConfig(): ProtectedTenantConfig =
-        decodeResponse(ProtectedTenantConfig.serializer()) { authorizedGet(urlBuilder.config()) }
+        decodeResponse(ProtectedTenantConfig.serializer()) { httpClient.get(urlBuilder.config()) }
 
     suspend fun fetchDashboardKpis(): DashboardKpisResponse =
-        decodeResponse(DashboardKpisResponse.serializer()) { authorizedGet(urlBuilder.dashboardKpis()) }
+        decodeResponse(DashboardKpisResponse.serializer()) { httpClient.get(urlBuilder.dashboardKpis()) }
 
     suspend fun fetchLowStock(): List<LowStockItem> =
-        decodeResponse(ListSerializer(LowStockItem.serializer())) { authorizedGet(urlBuilder.lowStock()) }
+        decodeResponse(ListSerializer(LowStockItem.serializer())) { httpClient.get(urlBuilder.lowStock()) }
 
     suspend fun fetchRecentOrders(): List<RecentOrderItem> =
-        decodeResponse(ListSerializer(RecentOrderItem.serializer())) { authorizedGet(urlBuilder.recentOrders()) }
-
-    private suspend fun authorizedGet(url: String): HttpResponse =
-        httpClient.get(url) { applyAuthorization() }
-
-    private suspend fun authorizedPost(url: String): HttpResponse =
-        httpClient.post(url) { applyAuthorization() }
-
-    private fun io.ktor.client.request.HttpRequestBuilder.applyAuthorization() {
-        val token = sessionStore.token ?: error("No active session token")
-        header(HttpHeaders.Authorization, "Bearer $token")
-    }
+        decodeResponse(ListSerializer(RecentOrderItem.serializer())) { httpClient.get(urlBuilder.recentOrders()) }
 
     private suspend fun <T> decodeResponse(
         strategy: DeserializationStrategy<T>,
