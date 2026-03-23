@@ -13,13 +13,17 @@ Kotlin Multiplatform app targeting:
 ## Tenant bootstrapping flow
 1. First run shows **Tenant Setup** screen.
 2. Enter tenant slug (`^[a-z0-9-]{3,50}$`) and press **Connect**.
-3. App fetches `GET /api/v1/{tenant_slug}/bootstrap`.
+3. App resolves tenant config using tenant-aware endpoints and caches the selected tenant config locally.
 4. Config is cached in SQLDelight (`selected_tenant`, `tenant_config`) before login.
 5. Login is enabled only when tenant + config are available.
 
 If offline:
 - Cached tenant config exists -> login allowed (offline mode message shown).
 - No cached config -> login blocked with clear error.
+
+
+## App flow diagram
+See [docs/app-flow.md](docs/app-flow.md) for a drawn flow of startup, login, session bootstrap, and permission-aware home screens.
 
 ## Switching tenant
 From Login/POS screen, use **Change tenant / Switch Tenant**:

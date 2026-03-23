@@ -18,6 +18,7 @@ fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
         }
     }
     single { TenantContext() }
+    single { SessionStore() }
     single { TenantAwareApiUrlBuilder(baseUrl, get()) }
     single {
         val appJson = get<Json>()
@@ -28,8 +29,8 @@ fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
         }
     }
     single { BfmDatabase(get()) }
-    single { TenantApiService(get(), get()) }
-    single { TenantRepository(get(), get(), get()) }
+    single { TenantApiService(get(), get(), get(), get()) }
+    single { TenantRepository(get(), get(), get(), get(), get()) }
     single { ConfigStore(get(), get()) }
     includes(platformTenantModule())
 }
