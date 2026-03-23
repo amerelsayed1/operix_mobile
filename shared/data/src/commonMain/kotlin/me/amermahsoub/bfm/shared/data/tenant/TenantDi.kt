@@ -8,7 +8,7 @@ import me.amermahsoub.bfm.shared.data.db.BfmDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-private const val DEFAULT_BASE_URL = "https://example-pos-api.com"
+private const val DEFAULT_BASE_URL = "https://192.168.1.33:8000"
 
 fun tenantBootstrapModule(baseUrl: String = DEFAULT_BASE_URL): Module = module {
     single {

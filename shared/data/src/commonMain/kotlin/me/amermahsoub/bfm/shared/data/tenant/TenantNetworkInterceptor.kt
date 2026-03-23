@@ -3,6 +3,7 @@ package me.amermahsoub.bfm.shared.data.tenant
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
+import io.ktor.http.encodedPath
 
 val TenantNetworkInterceptor = createClientPlugin(
     name = "TenantNetworkInterceptor",
