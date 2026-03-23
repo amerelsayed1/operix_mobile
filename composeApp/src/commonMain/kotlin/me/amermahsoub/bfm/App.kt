@@ -42,7 +42,7 @@ import me.amermahsoub.bfm.shared.data.tenant.TenantRepository
 import me.amermahsoub.bfm.shared.data.tenant.isValidTenantSlug
 import org.koin.core.context.GlobalContext
 
-private enum class AppScreen { TENANT_SETUP, LOGIN, HOME }
+private enum class AppScreen { LOGIN, HOME }
 
 private enum class HomeTab(
     val title: String,
@@ -89,15 +89,7 @@ fun App() {
 
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var screen by remember(selectedSlug, session) {
-        mutableStateOf(
-            when {
-                selectedSlug.isNullOrBlank() -> AppScreen.TENANT_SETUP
-                session != null -> AppScreen.HOME
-                else -> AppScreen.LOGIN
-            },
-        )
-    }
+    var screen by remember(session) { mutableStateOf(if (session != null) AppScreen.HOME else AppScreen.LOGIN) }
 
     LaunchedEffect(selectedSlug) {
         tenantContext.setTenantSlug(selectedSlug)
@@ -113,13 +105,16 @@ fun App() {
                     .padding(16.dp),
             ) {
                 when (screen) {
-                    AppScreen.TENANT_SETUP -> TenantSetupScreen(
-                        onConnect = { slug ->
+                    AppScreen.LOGIN -> LoginScreen(
+                        tenantName = tenantConfig?.name,
+                        initialTenantSlug = selectedSlug,
+                        onLogin = { slug, username, password ->
                             scope.launch {
                                 if (!isValidTenantSlug(slug)) {
-                                    snackbar.showSnackbar("Invalid slug format. Use lowercase letters, numbers and dashes (3-50 chars).")
+                                    snackbar.showSnackbar("Invalid company code / tenant slug.")
                                     return@launch
                                 }
+
                                 val previousSlug = selectedSlug
                                 try {
                                     tenantRepository.refreshConfig(slug)
@@ -127,34 +122,17 @@ fun App() {
                                     if (!previousSlug.isNullOrBlank() && previousSlug != slug) {
                                         tenantRepository.clearTenantData(previousSlug)
                                     }
-                                    screen = AppScreen.LOGIN
-                                    snackbar.showSnackbar("Connected to tenant '$slug'.")
                                 } catch (e: Throwable) {
                                     val cached = tenantRepository.getCachedConfigOnce(slug)
                                     if (cached != null) {
                                         tenantRepository.selectTenant(slug)
-                                        screen = AppScreen.LOGIN
                                         snackbar.showSnackbar("Offline mode: using cached tenant config for '$slug'.")
                                     } else {
                                         snackbar.showSnackbar(e.message ?: "Unable to fetch tenant configuration.")
+                                        return@launch
                                     }
                                 }
-                            }
-                        },
-                    )
 
-                    AppScreen.LOGIN -> LoginScreen(
-                        tenantName = tenantConfig?.name,
-                        tenantSlug = selectedSlug,
-                        enabled = !selectedSlug.isNullOrBlank() && tenantConfig != null,
-                        onChangeTenant = { screen = AppScreen.TENANT_SETUP },
-                        onLogin = { username, password ->
-                            scope.launch {
-                                val slug = selectedSlug
-                                if (slug.isNullOrBlank()) {
-                                    snackbar.showSnackbar("Select a tenant before login.")
-                                    return@launch
-                                }
                                 try {
                                     tenantRepository.loginAndBootstrapSession(slug, username, password)
                                     screen = AppScreen.HOME
@@ -170,12 +148,6 @@ fun App() {
                         tenantName = tenantConfig?.name ?: session?.login?.tenant?.name ?: "Operix",
                         tenantSlug = selectedSlug.orEmpty(),
                         session = session,
-                        onSwitchTenant = {
-                            scope.launch {
-                                tenantRepository.logout()
-                                screen = AppScreen.TENANT_SETUP
-                            }
-                        },
                         onLogout = {
                             scope.launch {
                                 tenantRepository.logout()
@@ -190,32 +162,12 @@ fun App() {
 }
 
 @Composable
-private fun TenantSetupScreen(onConnect: (String) -> Unit) {
-    var slug by remember { mutableStateOf("") }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Tenant Setup", style = MaterialTheme.typography.headlineSmall)
-        Text("Step 1 of startup: resolve the active tenant context before login.")
-        OutlinedTextField(
-            value = slug,
-            onValueChange = { slug = it.trim().lowercase() },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Tenant Slug") },
-            supportingText = { Text("Uses the path-based pattern /api/v1/{tenant_slug}/...") },
-        )
-        Button(onClick = { onConnect(slug) }) {
-            Text("Load tenant config")
-        }
-    }
-}
-
-@Composable
 private fun LoginScreen(
     tenantName: String?,
-    tenantSlug: String?,
-    enabled: Boolean,
-    onChangeTenant: () -> Unit,
-    onLogin: (String, String) -> Unit,
+    initialTenantSlug: String?,
+    onLogin: (String, String, String) -> Unit,
 ) {
+    var tenantSlug by remember(initialTenantSlug) { mutableStateOf(initialTenantSlug.orEmpty()) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -227,21 +179,21 @@ private fun LoginScreen(
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Operix", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                 Text("The Financial Architect", style = MaterialTheme.typography.titleMedium)
-                Text("Tenant: ${tenantName ?: "Not selected"}")
-                Text("Company code / tenant slug: ${tenantSlug ?: "-"}")
+                Text("Tenant: ${tenantName ?: "Operix"}")
+                Text("Sign in with company code, identity, and security key.")
             }
         }
 
         Card {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text("Access Portal", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Fields used on this screen: tenant slug (selected earlier), username, and password.")
+                Text("This screen now follows the provided mockups: no separate tenant setup step.")
                 OutlinedTextField(
-                    value = tenantSlug ?: "",
-                    onValueChange = {},
+                    value = tenantSlug,
+                    onValueChange = { tenantSlug = it.trim().lowercase() },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Company Code") },
-                    enabled = false,
+                    placeholder = { Text("e.g. global-corp") },
                 )
                 OutlinedTextField(
                     username,
@@ -249,7 +201,6 @@ private fun LoginScreen(
                     label = { Text("Identity") },
                     placeholder = { Text("Email or phone number") },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = enabled,
                 )
                 OutlinedTextField(
                     password,
@@ -257,16 +208,9 @@ private fun LoginScreen(
                     label = { Text("Security Key") },
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
-                    enabled = enabled,
                 )
-                Button(onClick = { onLogin(username, password) }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { onLogin(tenantSlug, username, password) }, modifier = Modifier.fillMaxWidth()) {
                     Text("Access Portal")
-                }
-                Button(onClick = onChangeTenant, modifier = Modifier.fillMaxWidth()) {
-                    Text("Change Tenant")
-                }
-                if (!enabled) {
-                    Text("Login remains disabled until tenant configuration is available.")
                 }
             }
         }
@@ -278,7 +222,6 @@ private fun HomeScreen(
     tenantName: String,
     tenantSlug: String,
     session: SessionBootstrap?,
-    onSwitchTenant: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val tabs = remember(session?.permissions) { availableTabsFor(session) }
@@ -299,7 +242,7 @@ private fun HomeScreen(
                 HomeTab.POS -> PosScreen(session)
                 HomeTab.INVOICES -> InvoicesScreen(session)
                 HomeTab.PRODUCTS -> ProductsScreen(session)
-                HomeTab.MORE -> MoreScreen(session, onSwitchTenant, onLogout)
+                HomeTab.MORE -> MoreScreen(session, onLogout)
             }
         }
 
@@ -463,7 +406,6 @@ private fun ProductsScreen(session: SessionBootstrap?) {
 @Composable
 private fun MoreScreen(
     session: SessionBootstrap?,
-    onSwitchTenant: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val recent = listOf(
@@ -484,7 +426,6 @@ private fun MoreScreen(
         Section("Recent Activity") { recent.forEach { item -> FeedCard(item) } }
         Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Close Shift") }
         Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Print Shift Report") }
-        Button(onClick = onSwitchTenant, modifier = Modifier.fillMaxWidth()) { Text("Switch Tenant") }
         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("Logout") }
         Text("Reports access: ${hasPermission(session, "reports.view")}")
     }
