@@ -1,0 +1,117 @@
+name: Screenshots
+
+# Boots an Android emulator on an Ubuntu runner, installs the debug + androidTest
+# APKs, runs `me.amermahsoub.bfm.ScreenshotTest#captureAppTour` via fastlane
+# screengrab, and uploads the resulting PNGs as a workflow artifact.
+#
+# Trigger it from the Actions tab (workflow_dispatch) or on pushes that touch
+# the screenshot test / fastlane config.
+
+on:
+  workflow_dispatch:
+    inputs:
+      api-level:
+        description: "Android API level to boot the emulator at"
+        required: false
+        default: "30"
+  push:
+    branches:
+      - claude/build-mobile-app-EtCMg
+    paths:
+      - "composeApp/src/androidInstrumentedTest/**"
+      - "fastlane/**"
+      - "Gemfile"
+      - ".github/workflows/screenshots.yml"
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    name: Capture Android screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: AVD cache
+        id: avd-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ github.event.inputs.api-level || '30' }}
+
+      - name: Pre-generate emulator snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ github.event.inputs.api-level || '30' }}
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "Generated AVD snapshot"
+
+      - name: Capture screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ github.event.inputs.api-level || '30' }}
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bundle exec fastlane android screenshots
+
+      - name: Upload screenshots artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-screenshots
+          path: fastlane/metadata/android/**/images/phoneScreenshots/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload fastlane logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastlane-logs
+          path: |
+            fastlane/report.xml
+            fastlane/test_output/**
+          if-no-files-found: ignore
+          retention-days: 7
