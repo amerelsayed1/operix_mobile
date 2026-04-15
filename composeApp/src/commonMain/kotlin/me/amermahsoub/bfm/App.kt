@@ -85,10 +85,11 @@ fun App() {
 
     val effectiveLocale = localeOverride
         ?: session?.me?.locale
-        ?: tenantConfig?.locale
+        ?: session?.login?.tenant?.locale
+        ?: tenantConfig?.localeDefault
         ?: "en"
 
-    val primaryHex = tenantConfig?.themePrimaryColor
+    val primaryHex = session?.login?.tenant?.themePrimaryColor
     val permissions = session?.permissions.orEmpty()
     val guard = remember(permissions) { PermissionGuard(permissions.toSet()) }
 
