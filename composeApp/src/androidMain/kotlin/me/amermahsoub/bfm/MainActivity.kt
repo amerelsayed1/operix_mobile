@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import me.amermahsoub.bfm.shared.data.featureModule
 import me.amermahsoub.bfm.shared.data.tenant.tenantBootstrapModule
 import me.amermahsoub.bfm.shared.printing.printingModule
 import org.koin.android.ext.koin.androidContext
@@ -18,7 +19,7 @@ class MainActivity : ComponentActivity() {
         if (GlobalContext.getOrNull() == null) {
             startKoin {
                 androidContext(this@MainActivity)
-                modules(tenantBootstrapModule(), printingModule())
+                modules(tenantBootstrapModule(), featureModule(), printingModule())
             }
         }
 
