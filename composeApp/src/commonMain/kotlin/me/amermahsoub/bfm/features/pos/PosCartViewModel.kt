@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import me.amermahsoub.bfm.app.ui.FeatureViewModel
@@ -204,6 +205,7 @@ private fun Double.format2(): String {
     return "$whole.$fracStr"
 }
 
+@OptIn(ExperimentalTime::class)
 private fun todayIso(): String {
     val now = Clock.System.now()
     val local = now.toLocalDateTime(TimeZone.currentSystemDefault()).date

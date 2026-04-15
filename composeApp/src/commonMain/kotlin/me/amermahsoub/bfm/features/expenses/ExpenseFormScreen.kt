@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import me.amermahsoub.bfm.app.i18n.appStrings
@@ -56,6 +57,7 @@ data class ExpenseFormUiState(
     val saved: Expense? = null,
 )
 
+@OptIn(ExperimentalTime::class)
 private fun today(): String {
     return Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
 }
