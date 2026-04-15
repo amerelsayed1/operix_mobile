@@ -54,6 +54,9 @@ kotlin {
             implementation("androidx.test:rules:1.6.1")
             implementation("androidx.compose.ui:ui-test-junit4-android:1.9.0")
             implementation("tools.fastlane:screengrab:2.1.1")
+            // Ktor MockEngine so screenshots render populated data without a
+            // live backend. Matches the Ktor version in libs.versions.toml.
+            implementation("io.ktor:ktor-client-mock:3.2.3")
         }
     }
 }

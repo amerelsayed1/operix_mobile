@@ -1,6 +1,7 @@
 package me.amermahsoub.bfm.shared.data.tenant
 
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -8,7 +9,17 @@ import me.amermahsoub.bfm.shared.data.db.BfmDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-fun tenantBootstrapModule(baseUrl: String = defaultTenantBaseUrl()): Module = module {
+/**
+ * Bootstrap module wiring the tenant HTTP stack, DB, and core stores.
+ *
+ * [engineFactory] defaults to the real platform engine but can be swapped for
+ * a Ktor `MockEngine` in instrumentation tests to render a fully-populated UI
+ * without a live backend.
+ */
+fun tenantBootstrapModule(
+    baseUrl: String = defaultTenantBaseUrl(),
+    engineFactory: () -> HttpClientEngine = ::platformHttpClientEngine,
+): Module = module {
     single {
         Json {
             ignoreUnknownKeys = true
@@ -22,7 +33,7 @@ fun tenantBootstrapModule(baseUrl: String = defaultTenantBaseUrl()): Module = mo
         val appJson = get<Json>()
         val sessionStore = get<SessionStore>()
         val tenantContext = get<TenantContext>()
-        HttpClient(platformHttpClientEngine()) {
+        HttpClient(engineFactory()) {
             install(ContentNegotiation) {
                 json(appJson)
             }
@@ -40,6 +51,6 @@ fun tenantBootstrapModule(baseUrl: String = defaultTenantBaseUrl()): Module = mo
 }
 
 expect fun platformTenantModule(): Module
-expect fun platformHttpClientEngine(): io.ktor.client.engine.HttpClientEngine
+expect fun platformHttpClientEngine(): HttpClientEngine
 expect fun defaultTenantBaseUrl(): String
 expect fun normalizeTenantBaseUrl(baseUrl: String): String
