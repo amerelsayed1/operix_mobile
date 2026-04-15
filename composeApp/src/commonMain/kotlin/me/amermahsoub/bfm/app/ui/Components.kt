@@ -29,7 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import me.amermahsoub.bfm.app.i18n.appStrings
 import me.amermahsoub.bfm.shared.domain.common.AppError
@@ -143,6 +145,15 @@ fun ListRow(
             }
             if (trailing != null) {
                 Text(trailing, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+            if (onClick != null) {
+                val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = if (rtl) "‹" else "›",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

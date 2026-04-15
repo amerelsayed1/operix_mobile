@@ -1,6 +1,8 @@
 package me.amermahsoub.bfm.features.auth
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -51,27 +56,54 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        val primary = MaterialTheme.colorScheme.primary
+        val onPrimary = MaterialTheme.colorScheme.onPrimary
+        val gradient = Brush.verticalGradient(
+            colors = listOf(primary, primary.copy(alpha = 0.85f)),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+                .background(gradient)
+                .padding(horizontal = 24.dp, vertical = 40.dp),
+        ) {
             Column(
-                modifier = Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 horizontalAlignment = Alignment.Start,
             ) {
-                Text(strings.appName, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold)
-                Text(strings.loginTitle, style = MaterialTheme.typography.titleLarge)
-                Text(strings.loginSubtitle, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    strings.appName,
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = onPrimary,
+                )
+                Text(
+                    strings.loginTitle,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = onPrimary,
+                )
+                Text(
+                    strings.loginSubtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = onPrimary.copy(alpha = 0.85f),
+                )
                 if (tenantName != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text("Tenant: $tenantName", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Tenant: $tenantName",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = onPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         }
 
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),

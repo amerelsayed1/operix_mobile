@@ -76,17 +76,17 @@ class TenantRepository(
     ): SessionBootstrap = coroutineScope {
         tenantContext.setTenantSlug(slug)
         val login = apiService.login(slug, email, password, rememberMe)
-        sessionStore.update(
-            SessionBootstrap(
-                login = login,
-                me = login.user,
-                permissions = emptyList(),
-                tenantConfig = null,
-            ),
+        val initial = SessionBootstrap(
+            login = login,
+            me = login.user,
+            permissions = emptyList(),
+            tenantConfig = null,
         )
+        sessionStore.update(initial)
+        persistSession(slug, initial)
 
-        val meDeferred = async { apiService.fetchCurrentUser() }
-        val permissionsDeferred = async { apiService.fetchPermissions() }
+        val meDeferred = async { runCatching { apiService.fetchCurrentUser() }.getOrNull() ?: login.user }
+        val permissionsDeferred = async { runCatching { apiService.fetchPermissions() }.getOrNull().orEmpty() }
         val configDeferred = async { runCatching { apiService.fetchProtectedConfig() }.getOrNull() }
 
         val session = SessionBootstrap(
@@ -96,12 +96,49 @@ class TenantRepository(
             tenantConfig = configDeferred.await(),
         )
         sessionStore.update(session)
+        persistSession(slug, session)
         session
     }
 
     suspend fun logout() {
         runCatching { apiService.logout() }
         sessionStore.clear()
+        clearStoredSession()
+    }
+
+    /**
+     * Hydrates [SessionStore] from the locally persisted session, if any.
+     * Safe to call on cold start — silently no-ops when nothing is stored
+     * or the stored payload cannot be decoded (e.g. after a schema change).
+     */
+    suspend fun restoreSession(): SessionBootstrap? = withContext(Dispatchers.Default) {
+        val row = queries.selectSession().executeAsOneOrNull() ?: return@withContext null
+        val stored = runCatching {
+            json.decodeFromString<SessionBootstrap>(row.json)
+        }.getOrElse {
+            // Corrupt / incompatible payload — drop it so we don't wedge the app.
+            queries.deleteSession()
+            return@withContext null
+        }
+        tenantContext.setTenantSlug(row.tenant_slug)
+        sessionStore.update(stored)
+        stored
+    }
+
+    private suspend fun persistSession(slug: String, session: SessionBootstrap) {
+        withContext(Dispatchers.Default) {
+            queries.upsertSession(
+                tenant_slug = slug,
+                json = json.encodeToString(session),
+                updated_at = nowIso(),
+            )
+        }
+    }
+
+    private suspend fun clearStoredSession() {
+        withContext(Dispatchers.Default) {
+            queries.deleteSession()
+        }
     }
 
     suspend fun clearTenantData(slug: String) {
