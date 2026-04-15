@@ -1,0 +1,24 @@
+# Screengrab configuration — drives Espresso screenshots on an Android emulator.
+# Run with: bundle exec fastlane screenshots
+#
+# Screenshots land under fastlane/metadata/android/<locale>/images/phoneScreenshots/.
+
+locales(["en-US"])
+clear_previous_screenshots(true)
+
+output_directory("fastlane/metadata/android")
+
+app_package_name("me.amermahsoub.bfm")
+tests_package_name("me.amermahsoub.bfm.test")
+
+# Only run the screenshot test class — no other androidTest classes in this
+# project, but be explicit so future tests don't get swept in.
+use_tests_in_classes(["me.amermahsoub.bfm.ScreenshotTest"])
+
+app_apk_path("composeApp/build/outputs/apk/debug/composeApp-debug.apk")
+tests_apk_path("composeApp/build/outputs/apk/androidTest/debug/composeApp-debug-androidTest.apk")
+
+test_instrumentation_runner("androidx.test.runner.AndroidJUnitRunner")
+
+reinstall_app(true)
+use_timestamp_suffix(false)

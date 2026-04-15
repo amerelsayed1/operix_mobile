@@ -46,6 +46,15 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
+        androidInstrumentedTest.dependencies {
+            implementation(libs.junit)
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.androidx.espresso.core)
+            implementation("androidx.test:runner:1.6.2")
+            implementation("androidx.test:rules:1.6.1")
+            implementation("androidx.compose.ui:ui-test-junit4-android:1.9.0")
+            implementation("tools.fastlane:screengrab:2.1.1")
+        }
     }
 }
 
@@ -59,6 +68,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -78,6 +88,7 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
 }
 
 compose.desktop {
