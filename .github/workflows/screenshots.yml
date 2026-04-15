@@ -21,6 +21,7 @@ on:
       - "composeApp/src/androidInstrumentedTest/**"
       - "fastlane/**"
       - "Gemfile"
+      - "Gemfile.lock"
       - ".github/workflows/screenshots.yml"
 
 concurrency:
@@ -31,11 +32,31 @@ jobs:
   screenshots:
     name: Capture Android screenshots
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+
+    env:
+      # Force fastlane to emit non-colorised, verbose output that's readable in
+      # the Actions log viewer.
+      FASTLANE_DISABLE_COLORS: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ubuntu-latest ships ~14 GB free on /. Android SDK components + emulator
+      # image + Gradle cache routinely eats through that. Free up ~30 GB before
+      # we start so the emulator doesn't ENOSPC during boot.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: true
+          tool-cache: false
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -51,6 +72,9 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
@@ -69,8 +93,11 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ github.event.inputs.api-level || '30' }}
+          key: avd-${{ github.event.inputs.api-level || '30' }}-v1
 
+      # First boot — create the AVD and *save* a snapshot for the next run.
+      # Note: we deliberately omit `-no-snapshot-save` here so the snapshot is
+      # actually written to disk and picked up by the cache step above.
       - name: Pre-generate emulator snapshot
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
@@ -80,7 +107,7 @@ jobs:
           target: default
           profile: pixel_6
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: echo "Generated AVD snapshot"
 
@@ -92,9 +119,9 @@ jobs:
           target: default
           profile: pixel_6
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: bundle exec fastlane android screenshots
+          script: bundle exec fastlane android screenshots --verbose
 
       - name: Upload screenshots artifact
         if: always()
@@ -105,13 +132,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload fastlane logs on failure
+      - name: Upload fastlane + gradle logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: fastlane-logs
+          name: ci-logs
           path: |
             fastlane/report.xml
             fastlane/test_output/**
+            composeApp/build/reports/**
+            composeApp/build/outputs/androidTest-results/**
           if-no-files-found: ignore
           retention-days: 7
