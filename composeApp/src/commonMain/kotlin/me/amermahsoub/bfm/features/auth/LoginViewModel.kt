@@ -48,11 +48,14 @@ class LoginViewModel(
             _state.value = s.copy(submitting = true, error = null, offlineNotice = false)
             var offline = false
             try {
+                // Best-effort pre-login bootstrap. The public tenant-config
+                // endpoint may not exist on every backend; if it fails we
+                // just proceed — the protected /config endpoint fetched
+                // after login fills in tenant info.
                 runCatching { tenantRepository.refreshConfig(s.tenantSlug) }
-                    .onFailure { err ->
+                    .onFailure {
                         val cached = tenantRepository.getCachedConfigOnce(s.tenantSlug)
-                        if (cached == null) throw err
-                        offline = true
+                        if (cached == null) offline = true
                     }
                 tenantRepository.selectTenant(s.tenantSlug)
                 tenantRepository.loginAndBootstrapSession(s.tenantSlug, s.identity, s.password)
