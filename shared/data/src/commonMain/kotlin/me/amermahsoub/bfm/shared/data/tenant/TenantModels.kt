@@ -150,11 +150,24 @@ data class SessionUser(
     @SerialName("is_active") val isActive: Boolean = true,
     @SerialName("tenant_id") val tenantId: Long? = null,
     @SerialName("role_id") val roleId: Long? = null,
-    val role: String? = null,
+    val role: RoleRef? = null,
     val roles: List<String> = emptyList(),
     val locale: String? = null,
+    @SerialName("business_name") val businessName: String? = null,
+    @SerialName("business_logo") val businessLogo: String? = null,
+    @SerialName("default_currency") val defaultCurrency: String? = null,
+    @SerialName("theme_mode") val themeMode: String? = null,
+    @SerialName("theme_primary_color") val themePrimaryColor: String? = null,
     @SerialName("drawer_account") val drawerAccount: AccountRef? = null,
     @SerialName("default_account") val defaultAccount: AccountRef? = null,
+) {
+    val roleName: String? get() = role?.name
+}
+
+@Serializable
+data class RoleRef(
+    val id: Long? = null,
+    val name: String? = null,
 )
 
 @Serializable

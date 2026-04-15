@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import me.amermahsoub.bfm.shared.data.featureModule
 import me.amermahsoub.bfm.shared.data.tenant.LoginResponse
+import me.amermahsoub.bfm.shared.data.tenant.RoleRef
 import me.amermahsoub.bfm.shared.data.tenant.SessionBootstrap
 import me.amermahsoub.bfm.shared.data.tenant.SessionStore
 import me.amermahsoub.bfm.shared.data.tenant.SessionTenant
@@ -88,7 +89,7 @@ class ScreenshotTest {
             name = "Demo Owner",
             email = "owner@operix.app",
             phoneNumber = "+1 555 555 0123",
-            role = "Owner",
+            role = RoleRef(id = 1, name = "Owner"),
             locale = "en",
         )
         val tenant = SessionTenant(
