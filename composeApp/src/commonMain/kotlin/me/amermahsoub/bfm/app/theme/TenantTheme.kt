@@ -26,7 +26,7 @@ fun TenantTheme(
     val primary = parseHexColor(primaryColorHex) ?: DefaultPrimary
     val scheme = buildColorScheme(primary, darkTheme)
     CompositionLocalProvider(LocalTenantPrimary provides primary) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme, typography = appTypography(), content = content)
     }
 }
 

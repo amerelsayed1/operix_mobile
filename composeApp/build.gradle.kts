@@ -61,6 +61,11 @@ kotlin {
     }
 }
 
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "me.amermahsoub.bfm.composeapp.resources"
+}
+
 android {
     namespace = "me.amermahsoub.bfm"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
