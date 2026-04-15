@@ -12,7 +12,7 @@ val TenantNetworkInterceptor = createClientPlugin(
     val tenantSlugProvider = pluginConfig.tenantSlugProvider
 
     onRequest { request, _ ->
-        val path = request.url.encodedPath
+        val path = request.url.build().encodedPath
         val token = tokenProvider()
         val tenantSlug = tenantSlugProvider()
 
