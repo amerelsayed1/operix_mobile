@@ -54,16 +54,47 @@ data class AppConfig(
     @SerialName("force_update") val forceUpdate: Boolean,
 )
 
+/**
+ * Public tenant config returned by `GET /api/v1/tenant-config/{slug}`.
+ *
+ * The live response is `{ "tenant": { id, slug, name, logo_url },
+ * "theme": { primaryColor, ..., logoUrl, appName, themeMode } }`.
+ * Accessor properties expose flat fields for legacy call sites.
+ */
 @Serializable
 data class PublicTenantConfig(
+    val tenant: PublicTenantInfo,
+    val theme: PublicTenantTheme? = null,
+) {
+    val slug: String get() = tenant.slug
+    val name: String get() = theme?.appName ?: tenant.name
+    val logoUrl: String? get() = tenant.logoUrl ?: theme?.logoUrl
+    val themePrimaryColor: String? get() = theme?.primaryColor
+    val locale: String? get() = null
+    val localeDirection: String? get() = null
+    val currencyCode: String? get() = null
+    val timezone: String? get() = null
+}
+
+@Serializable
+data class PublicTenantInfo(
+    val id: Long? = null,
     val slug: String,
     val name: String,
     @SerialName("logo_url") val logoUrl: String? = null,
-    val locale: String? = null,
-    @SerialName("locale_direction") val localeDirection: String? = null,
-    @SerialName("theme_primary_color") val themePrimaryColor: String? = null,
-    @SerialName("currency_code") val currencyCode: String? = null,
-    val timezone: String? = null,
+)
+
+@Serializable
+data class PublicTenantTheme(
+    val primaryColor: String? = null,
+    val secondaryColor: String? = null,
+    val accentColor: String? = null,
+    val backgroundColor: String? = null,
+    val textColor: String? = null,
+    val logoUrl: String? = null,
+    val faviconUrl: String? = null,
+    val appName: String? = null,
+    val themeMode: String? = null,
 )
 
 @Serializable
