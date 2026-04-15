@@ -68,9 +68,14 @@ class TenantRepository(
         return response.tenant
     }
 
-    suspend fun loginAndBootstrapSession(slug: String, username: String, password: String): SessionBootstrap = coroutineScope {
+    suspend fun loginAndBootstrapSession(
+        slug: String,
+        email: String,
+        password: String,
+        rememberMe: Boolean = false,
+    ): SessionBootstrap = coroutineScope {
         tenantContext.setTenantSlug(slug)
-        val login = apiService.login(slug, username, password)
+        val login = apiService.login(slug, email, password, rememberMe)
         sessionStore.update(
             SessionBootstrap(
                 login = login,

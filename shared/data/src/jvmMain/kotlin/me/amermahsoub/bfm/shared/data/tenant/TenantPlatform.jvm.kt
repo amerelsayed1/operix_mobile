@@ -20,6 +20,6 @@ actual fun platformTenantModule(): Module = module {
 
 actual fun platformHttpClientEngine(): HttpClientEngine = CIO.create()
 
-actual fun defaultTenantBaseUrl(): String = "https://api.operix.com"
+actual fun defaultTenantBaseUrl(): String = "https://operixhq.com"
 
 actual fun normalizeTenantBaseUrl(baseUrl: String): String = baseUrl

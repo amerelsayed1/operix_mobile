@@ -50,11 +50,16 @@ class TenantApiService(
     suspend fun fetchSystemConfig(slug: String): TenantSystemConfig =
         decodeResponse(TenantSystemConfig.serializer()) { httpClient.get(urlBuilder.systemConfig(slug)) }
 
-    suspend fun login(slug: String, username: String, password: String): LoginResponse =
+    suspend fun login(
+        slug: String,
+        email: String,
+        password: String,
+        rememberMe: Boolean = false,
+    ): LoginResponse =
         decodeResponse(LoginResponse.serializer()) {
             httpClient.post(urlBuilder.login(slug)) {
                 contentType(ContentType.Application.Json)
-                setBody(LoginRequest(username, password))
+                setBody(LoginRequest(email = email, password = password, rememberMe = rememberMe))
             }
         }
 

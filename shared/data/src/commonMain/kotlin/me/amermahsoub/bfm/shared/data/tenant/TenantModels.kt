@@ -81,15 +81,20 @@ data class BrandingConfig(
 )
 
 @Serializable
-data class LoginRequest(val username: String, val password: String)
+data class LoginRequest(
+    val email: String,
+    val password: String,
+    @SerialName("remember_me") val rememberMe: Boolean = false,
+)
 
 @Serializable
 data class LoginResponse(
     val token: String,
     @SerialName("token_type") val tokenType: String = "Bearer",
     @SerialName("expires_in") val expiresIn: Long? = null,
+    @SerialName("remember_me") val rememberMe: Boolean = false,
     val user: SessionUser,
-    val tenant: SessionTenant,
+    val tenant: SessionTenant? = null,
     @SerialName("redirect_to") val redirectTo: String? = null,
 )
 
@@ -111,8 +116,11 @@ data class SessionUser(
     val name: String,
     val email: String? = null,
     @SerialName("phone") val phoneNumber: String? = null,
+    @SerialName("is_active") val isActive: Boolean = true,
+    @SerialName("tenant_id") val tenantId: Long? = null,
     @SerialName("role_id") val roleId: Long? = null,
     val role: String? = null,
+    val roles: List<String> = emptyList(),
     val locale: String? = null,
     @SerialName("drawer_account") val drawerAccount: AccountRef? = null,
     @SerialName("default_account") val defaultAccount: AccountRef? = null,
