@@ -121,6 +121,7 @@ fun ListRow(
     subtitle: String? = null,
     trailing: String? = null,
     badge: String? = null,
+    badgeTone: BadgeTone = BadgeTone.NEUTRAL,
     onClick: (() -> Unit)? = null,
 ) {
     val cardModifier = Modifier
@@ -140,7 +141,7 @@ fun ListRow(
                 }
                 if (badge != null) {
                     Spacer(Modifier.height(4.dp))
-                    BadgeChip(badge)
+                    StatusBadge(badge, tone = badgeTone)
                 }
             }
             if (trailing != null) {
@@ -169,6 +170,26 @@ fun BadgeChip(text: String, color: Color = MaterialTheme.colorScheme.primary) {
     ) {
         Text(text, style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.Bold)
     }
+}
+
+/**
+ * Semantic badge tones used for statuses (order paid/pending/refunded,
+ * stock levels, etc.). Picks a consistent color from the theme scheme so
+ * callers don't hand-pick greens/oranges/reds.
+ */
+enum class BadgeTone { NEUTRAL, SUCCESS, WARNING, ERROR, INFO }
+
+@Composable
+fun StatusBadge(text: String, tone: BadgeTone = BadgeTone.NEUTRAL) {
+    val scheme = MaterialTheme.colorScheme
+    val color = when (tone) {
+        BadgeTone.SUCCESS -> Color(0xFF16A34A)
+        BadgeTone.WARNING -> Color(0xFFD97706)
+        BadgeTone.ERROR -> scheme.error
+        BadgeTone.INFO -> scheme.tertiary
+        BadgeTone.NEUTRAL -> scheme.primary
+    }
+    BadgeChip(text = text, color = color)
 }
 
 @Composable
@@ -207,4 +228,46 @@ fun ScrollingColumn(
 @Composable
 fun CircleDot(color: Color = MaterialTheme.colorScheme.primary) {
     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
+}
+
+/**
+ * Tinted quick-action tile — Square/Loyverse home-screen pattern. Renders
+ * a big emoji glyph in a colored pill and a bold caption underneath.
+ * Laid out to fill the available width so pairs sit cleanly in a
+ * `Row { weight(1f); weight(1f) }`.
+ */
+@Composable
+fun ActionTile(
+    emoji: String,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Color = MaterialTheme.colorScheme.primary,
+) {
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accent.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(emoji, style = MaterialTheme.typography.titleLarge)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
 }

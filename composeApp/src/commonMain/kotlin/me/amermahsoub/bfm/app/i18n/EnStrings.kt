@@ -37,6 +37,7 @@ object EnStrings : AppStrings {
     override val tabMore = "More"
 
     override val dashboardTitle = "Today"
+    override val welcomeBack = "Welcome back"
     override val totalSales = "Total sales"
     override val totalExpenses = "Total expenses"
     override val netProfit = "Net profit"
@@ -48,6 +49,7 @@ object EnStrings : AppStrings {
     override val startSale = "Start sale"
     override val recordPayment = "Record payment"
     override val addExpense = "Add expense"
+    override val viewReports = "Reports"
 
     override val posTitle = "Point of Sale"
     override val searchProducts = "Search products or scan barcode"

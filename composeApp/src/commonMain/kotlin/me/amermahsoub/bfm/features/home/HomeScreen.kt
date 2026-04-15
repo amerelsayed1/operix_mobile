@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -86,7 +87,7 @@ fun HomeScreen(onLogout: () -> Unit) {
                 NavigationBarItem(
                     selected = tab == currentTab,
                     onClick = { selected = tab.name },
-                    icon = {},
+                    icon = { Text(iconFor(tab), style = MaterialTheme.typography.titleLarge) },
                     label = { Text(labelFor(tab, strings)) },
                 )
             }
@@ -100,4 +101,12 @@ private fun labelFor(tab: HomeTab, strings: me.amermahsoub.bfm.app.i18n.AppStrin
     HomeTab.CLIENTS -> strings.tabClients
     HomeTab.PRODUCTS -> strings.tabProducts
     HomeTab.MORE -> strings.tabMore
+}
+
+private fun iconFor(tab: HomeTab): String = when (tab) {
+    HomeTab.DASHBOARD -> "\uD83C\uDFE0" // 🏠
+    HomeTab.POS -> "\uD83D\uDED2" // 🛒
+    HomeTab.CLIENTS -> "\uD83D\uDC65" // 👥
+    HomeTab.PRODUCTS -> "\uD83D\uDCE6" // 📦
+    HomeTab.MORE -> "\u2630" // ☰
 }

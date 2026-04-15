@@ -37,6 +37,7 @@ object ArStrings : AppStrings {
     override val tabMore = "المزيد"
 
     override val dashboardTitle = "اليوم"
+    override val welcomeBack = "مرحبًا بعودتك"
     override val totalSales = "إجمالي المبيعات"
     override val totalExpenses = "إجمالي المصروفات"
     override val netProfit = "صافي الربح"
@@ -48,6 +49,7 @@ object ArStrings : AppStrings {
     override val startSale = "بدء بيع"
     override val recordPayment = "تسجيل دفعة"
     override val addExpense = "إضافة مصروف"
+    override val viewReports = "التقارير"
 
     override val posTitle = "نقطة البيع"
     override val searchProducts = "ابحث عن منتج أو امسح الباركود"

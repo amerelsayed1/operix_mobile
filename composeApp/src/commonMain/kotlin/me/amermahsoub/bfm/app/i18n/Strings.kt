@@ -54,6 +54,7 @@ interface AppStrings {
 
     // Dashboard
     val dashboardTitle: String
+    val welcomeBack: String
     val totalSales: String
     val totalExpenses: String
     val netProfit: String
@@ -65,6 +66,7 @@ interface AppStrings {
     val startSale: String
     val recordPayment: String
     val addExpense: String
+    val viewReports: String
 
     // POS
     val posTitle: String
