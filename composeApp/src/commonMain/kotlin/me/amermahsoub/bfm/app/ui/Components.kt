@@ -1,6 +1,7 @@
 package me.amermahsoub.bfm.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -120,10 +121,13 @@ fun ListRow(
     badge: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    val cardModifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp)
+        .let { if (onClick != null) it.clickable { onClick() } else it }
+    ElevatedCard(modifier = cardModifier) {
         Row(
-            modifier = (if (onClick != null) Modifier.fillMaxWidth() else Modifier.fillMaxWidth())
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
