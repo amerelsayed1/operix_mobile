@@ -19,7 +19,7 @@ actual fun platformTenantModule(): Module = module {
 
 actual fun platformHttpClientEngine(): HttpClientEngine = OkHttp.create()
 
-actual fun defaultTenantBaseUrl(): String = "http://10.0.2.2:8000"
+actual fun defaultTenantBaseUrl(): String = "https://api.operix.com"
 
 actual fun normalizeTenantBaseUrl(baseUrl: String): String =
     baseUrl
