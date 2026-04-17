@@ -146,6 +146,12 @@ interface AppStrings {
     val changePassword: String
     val language: String
     val settings: String
+    val theme: String
+    val lightMode: String
+    val darkMode: String
+    val currentPassword: String
+    val newPassword: String
+    val confirmPassword: String
 }
 
 val LocalAppStrings = staticCompositionLocalOf<AppStrings> { EnStrings }

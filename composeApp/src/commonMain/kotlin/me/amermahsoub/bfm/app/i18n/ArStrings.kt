@@ -122,4 +122,10 @@ object ArStrings : AppStrings {
     override val changePassword = "تغيير كلمة المرور"
     override val language = "اللغة"
     override val settings = "الإعدادات"
+    override val theme = "المظهر"
+    override val lightMode = "فاتح"
+    override val darkMode = "داكن"
+    override val currentPassword = "كلمة المرور الحالية"
+    override val newPassword = "كلمة المرور الجديدة"
+    override val confirmPassword = "تأكيد كلمة المرور"
 }

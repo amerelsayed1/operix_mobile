@@ -42,17 +42,17 @@ fun SettingsScreen(
                 label = { Text("العربية") },
             )
         }
-        SectionTitle("Theme")
+        SectionTitle(strings.theme)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = !currentDark,
                 onClick = { onDarkChange(false) },
-                label = { Text("Light") },
+                label = { Text(strings.lightMode) },
             )
             FilterChip(
                 selected = currentDark,
                 onClick = { onDarkChange(true) },
-                label = { Text("Dark") },
+                label = { Text(strings.darkMode) },
             )
         }
     }

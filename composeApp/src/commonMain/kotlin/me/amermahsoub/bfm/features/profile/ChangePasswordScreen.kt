@@ -93,7 +93,7 @@ fun ChangePasswordScreen(onDone: () -> Unit) {
         OutlinedTextField(
             value = state.current,
             onValueChange = vm::updateCurrent,
-            label = { Text("Current password") },
+            label = { Text(strings.currentPassword) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
@@ -109,7 +109,7 @@ fun ChangePasswordScreen(onDone: () -> Unit) {
         OutlinedTextField(
             value = state.confirmation,
             onValueChange = vm::updateConfirmation,
-            label = { Text("Confirm password") },
+            label = { Text(strings.confirmPassword) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),

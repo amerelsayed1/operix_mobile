@@ -122,4 +122,10 @@ object EnStrings : AppStrings {
     override val changePassword = "Change password"
     override val language = "Language"
     override val settings = "Settings"
+    override val theme = "Theme"
+    override val lightMode = "Light"
+    override val darkMode = "Dark"
+    override val currentPassword = "Current password"
+    override val newPassword = "New password"
+    override val confirmPassword = "Confirm password"
 }
