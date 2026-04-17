@@ -243,9 +243,8 @@ fun ModuleCard(
     accent: Color = MaterialTheme.colorScheme.primary,
 ) {
     ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier
@@ -287,9 +286,8 @@ fun ActionTile(
     accent: Color = MaterialTheme.colorScheme.primary,
 ) {
     ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),

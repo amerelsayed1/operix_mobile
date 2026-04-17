@@ -1,6 +1,5 @@
 package me.amermahsoub.bfm.features.pos
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
@@ -28,8 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.amermahsoub.bfm.app.i18n.appStrings
-import me.amermahsoub.bfm.app.ui.BadgeChip
+import me.amermahsoub.bfm.app.ui.BadgeTone
 import me.amermahsoub.bfm.app.ui.ErrorState
+import me.amermahsoub.bfm.app.ui.StatusBadge
 import me.amermahsoub.bfm.app.ui.LoadingState
 import me.amermahsoub.bfm.app.ui.PrimaryButton
 import me.amermahsoub.bfm.app.ui.ScreenTitle
@@ -65,7 +64,8 @@ fun PosCartScreen(
 
     when {
         state.loading -> LoadingState()
-        state.error != null && state.shift == null -> ErrorState(state.error!!, onRetry = vm::refresh)
+        state.error != null && state.shift == null && state.reference.products.isEmpty() ->
+            ErrorState(state.error!!, onRetry = vm::refresh)
         else -> {
             Column(
                 modifier = Modifier
@@ -77,6 +77,7 @@ fun PosCartScreen(
                 ScreenTitle(strings.posTitle)
 
                 // Shift banner
+                val shiftOpen = state.shift?.status == "open"
                 ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -84,16 +85,17 @@ fun PosCartScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                if (state.shift?.status == "open") strings.shiftOpen else strings.shiftClosed,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                            val tone = if (shiftOpen) BadgeTone.SUCCESS else BadgeTone.WARNING
+                            StatusBadge(
+                                text = if (shiftOpen) strings.shiftOpen else strings.shiftClosed,
+                                tone = tone,
                             )
                             state.shift?.openedAt?.let {
+                                Spacer(Modifier.height(4.dp))
                                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                        if (state.shift?.status == "open") {
+                        if (shiftOpen) {
                             SecondaryButton(text = strings.closeShift, onClick = onCloseShift, modifier = Modifier)
                         } else {
                             PrimaryButton(text = strings.openShift, onClick = onOpenShift, modifier = Modifier)
@@ -114,9 +116,8 @@ fun PosCartScreen(
                     SectionTitle(strings.productsTitle)
                     state.searchResults.take(10).forEach { product ->
                         ElevatedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { vm.addToCart(product) },
+                            onClick = { vm.addToCart(product) },
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp).fillMaxWidth(),
@@ -124,11 +125,14 @@ fun PosCartScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(product.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                                    Text(
-                                        product.sku ?: product.category ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    val sub = product.sku ?: product.category ?: ""
+                                    if (sub.isNotBlank()) {
+                                        Text(
+                                            sub,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
                                 Text(product.displayPrice, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
@@ -250,6 +254,22 @@ fun PosCartScreen(
                     Text(err.message, color = MaterialTheme.colorScheme.error)
                 }
 
+                if (!shiftOpen && state.lines.isNotEmpty()) {
+                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            StatusBadge(strings.shiftClosed, tone = BadgeTone.WARNING)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                strings.openShift,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            PrimaryButton(text = strings.openShift, onClick = onOpenShift)
+                        }
+                    }
+                }
+
                 PrimaryButton(
                     text = if (state.submitting) strings.loading else strings.completeSale,
                     onClick = { vm.checkout() },
@@ -257,17 +277,6 @@ fun PosCartScreen(
                 )
 
                 SecondaryButton(text = strings.orders, onClick = onViewOrders)
-
-                if (state.shift?.status != "open") {
-                    AssistChip(
-                        onClick = onOpenShift,
-                        label = { Text(strings.openShift) },
-                    )
-                }
-
-                BadgeChip(
-                    text = if (state.shift?.status == "open") "${strings.shiftOpen} · #${state.shift?.id}" else strings.shiftClosed,
-                )
             }
         }
     }
