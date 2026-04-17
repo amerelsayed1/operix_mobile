@@ -231,6 +231,49 @@ fun CircleDot(color: Color = MaterialTheme.colorScheme.primary) {
 }
 
 /**
+ * Large module card in the style of Arabic POS launchers — a big colored
+ * circle with an emoji glyph, centered over a bold text label. Designed to
+ * sit in a 2-column grid.
+ */
+@Composable
+fun ModuleCard(
+    emoji: String,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Color = MaterialTheme.colorScheme.primary,
+) {
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(emoji, style = MaterialTheme.typography.headlineMedium)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+/**
  * Tinted quick-action tile — Square/Loyverse home-screen pattern. Renders
  * a big emoji glyph in a colored pill and a bold caption underneath.
  * Laid out to fill the available width so pairs sit cleanly in a

@@ -27,12 +27,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.amermahsoub.bfm.app.i18n.appStrings
 import me.amermahsoub.bfm.app.permission.LocalPermissionGuard
-import me.amermahsoub.bfm.app.ui.ActionTile
 import me.amermahsoub.bfm.app.ui.BadgeChip
 import me.amermahsoub.bfm.app.ui.BadgeTone
 import me.amermahsoub.bfm.app.ui.ErrorState
 import me.amermahsoub.bfm.app.ui.ListRow
 import me.amermahsoub.bfm.app.ui.LoadingState
+import me.amermahsoub.bfm.app.ui.ModuleCard
 import me.amermahsoub.bfm.app.ui.SectionTitle
 import me.amermahsoub.bfm.app.ui.StatCard
 import me.amermahsoub.bfm.app.ui.rememberFeatureViewModel
@@ -46,6 +46,11 @@ fun DashboardScreen(
     onRecordPayment: () -> Unit = {},
     onAddExpense: () -> Unit = {},
     onOrderClicked: (Long) -> Unit = {},
+    onClients: () -> Unit = {},
+    onProducts: () -> Unit = {},
+    onInventory: () -> Unit = {},
+    onAccounts: () -> Unit = {},
+    onExpenses: () -> Unit = {},
 ) {
     val repo = remember { GlobalContext.get().get<DashboardRepository>() }
     val sessionStore = remember { GlobalContext.get().get<SessionStore>() }
@@ -74,46 +79,54 @@ fun DashboardScreen(
                         ?: strings.dashboardTitle,
                 )
 
-                val summary = data?.summary
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        StatCard(
-                            label = strings.totalSales,
-                            value = summary?.totalRevenue ?: "—",
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        StatCard(
-                            label = strings.totalExpenses,
-                            value = summary?.totalExpenses ?: "—",
-                            accent = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        StatCard(
-                            label = strings.netProfit,
-                            value = summary?.netProfit ?: "—",
-                            accent = MaterialTheme.colorScheme.tertiary,
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        StatCard(
-                            label = strings.totalBalance,
-                            value = summary?.totalBalance ?: "—",
-                        )
-                    }
-                }
-
-                SectionTitle(strings.quickActions)
-                QuickActionsGrid(
+                // ── Module grid (competitor-style 2×3 launcher cards) ──
+                ModuleGrid(
                     strings = strings,
                     onStartSale = onStartSale,
-                    onRecordPayment = onRecordPayment,
-                    onAddExpense = onAddExpense,
+                    onClients = onClients,
+                    onProducts = onProducts,
+                    onExpenses = onExpenses,
+                    onAccounts = onAccounts,
+                    onInventory = onInventory,
                 )
 
+                // ── KPI summary ──
+                val summary = data?.summary
+                if (summary != null) {
+                    SectionTitle(strings.dashboardTitle)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            StatCard(
+                                label = strings.totalSales,
+                                value = summary.totalRevenue ?: "—",
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            StatCard(
+                                label = strings.totalExpenses,
+                                value = summary.totalExpenses ?: "—",
+                                accent = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            StatCard(
+                                label = strings.netProfit,
+                                value = summary.netProfit ?: "—",
+                                accent = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            StatCard(
+                                label = strings.totalBalance,
+                                value = summary.totalBalance ?: "—",
+                            )
+                        }
+                    }
+                }
+
+                // ── Low stock ──
                 val lowStock = data?.lowStock.orEmpty()
                 if (lowStock.isNotEmpty()) {
                     SectionTitle(strings.lowStockItems)
@@ -128,6 +141,7 @@ fun DashboardScreen(
                     }
                 }
 
+                // ── Recent orders ──
                 val recent = data?.recentOrders.orEmpty()
                 if (recent.isNotEmpty()) {
                     SectionTitle(strings.recentOrders)
@@ -144,6 +158,7 @@ fun DashboardScreen(
                     }
                 }
 
+                // ── Top selling ──
                 val top = data?.topProducts.orEmpty()
                 if (top.isNotEmpty()) {
                     SectionTitle(strings.topSelling)
@@ -156,6 +171,7 @@ fun DashboardScreen(
                     }
                 }
 
+                // ── Empty fallback ──
                 if (lowStock.isEmpty() && recent.isEmpty() && top.isEmpty() && summary == null) {
                     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(24.dp)) {
@@ -170,6 +186,7 @@ fun DashboardScreen(
                     }
                 }
 
+                // ── Inline error ──
                 if (state.error != null) {
                     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                         Row(
@@ -185,6 +202,10 @@ fun DashboardScreen(
         }
     }
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+//  Private composables & helpers
+// ──────────────────────────────────────────────────────────────────────────
 
 private fun Double.format1(): String {
     val rounded = (this * 10).toLong() / 10.0
@@ -210,7 +231,7 @@ private fun GreetingHero(welcome: String, name: String?, subtitle: String) {
     ) {
         Column {
             Text(
-                text = if (name.isNullOrBlank()) "$welcome 👋" else "$welcome, $name 👋",
+                text = if (name.isNullOrBlank()) "$welcome \uD83D\uDC4B" else "$welcome, $name \uD83D\uDC4B",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = onPrimary,
@@ -225,61 +246,95 @@ private fun GreetingHero(welcome: String, name: String?, subtitle: String) {
     }
 }
 
-private data class DashboardAction(
+private data class Module(
     val emoji: String,
     val label: String,
     val onClick: () -> Unit,
     val accent: Color,
 )
 
+/**
+ * 2×3 grid of large icon cards matching the competitor screenshot — each
+ * card has a large tinted circle with an emoji and a bold label below.
+ */
 @Composable
-private fun QuickActionsGrid(
+private fun ModuleGrid(
     strings: me.amermahsoub.bfm.app.i18n.AppStrings,
     onStartSale: () -> Unit,
-    onRecordPayment: () -> Unit,
-    onAddExpense: () -> Unit,
+    onClients: () -> Unit,
+    onProducts: () -> Unit,
+    onExpenses: () -> Unit,
+    onAccounts: () -> Unit,
+    onInventory: () -> Unit,
 ) {
     val guard = LocalPermissionGuard.current
-    val scheme = MaterialTheme.colorScheme
-    val actions = mutableListOf<DashboardAction>()
-    if (guard.hasAny("pos.create", "sales.create")) {
-        actions += DashboardAction(
-            emoji = "\uD83D\uDED2", // 🛒
-            label = strings.startSale,
-            onClick = onStartSale,
-            accent = scheme.primary,
-        )
-    }
-    if (guard.hasAny("clients.payments", "sales.pay")) {
-        actions += DashboardAction(
-            emoji = "\uD83D\uDCB5", // 💵
-            label = strings.recordPayment,
-            onClick = onRecordPayment,
-            accent = scheme.tertiary,
-        )
-    }
-    if (guard.hasAny("expenses.create")) {
-        actions += DashboardAction(
-            emoji = "\uD83E\uDDFE", // 🧾
-            label = strings.addExpense,
-            onClick = onAddExpense,
-            accent = scheme.error,
-        )
-    }
-    if (actions.isEmpty()) return
+    val modules = mutableListOf<Module>()
 
-    // Render as 2-per-row pairs. Ragged last row pads with a Spacer so
-    // the remaining tile stays at half-width instead of stretching.
-    actions.chunked(2).forEach { pair ->
+    if (guard.hasAny("pos.view", "pos.create", "sales.create")) {
+        modules += Module(
+            emoji = "\uD83D\uDED2", // 🛒
+            label = strings.posTitle,
+            onClick = onStartSale,
+            accent = Color(0xFFE91E63),
+        )
+    }
+    if (guard.hasAny("clients.view")) {
+        modules += Module(
+            emoji = "\uD83D\uDC65", // 👥
+            label = strings.clientsTitle,
+            onClick = onClients,
+            accent = Color(0xFF2196F3),
+        )
+    }
+    if (guard.hasAny("products.view", "inventory.view")) {
+        modules += Module(
+            emoji = "\uD83D\uDCE6", // 📦
+            label = strings.productsTitle,
+            onClick = onProducts,
+            accent = Color(0xFFFF9800),
+        )
+    }
+    if (guard.hasAny("expenses.view", "expenses.create")) {
+        modules += Module(
+            emoji = "\uD83D\uDCB0", // 💰
+            label = strings.expensesTitle,
+            onClick = onExpenses,
+            accent = Color(0xFF9C27B0),
+        )
+    }
+    if (guard.hasAny("accounts.view")) {
+        modules += Module(
+            emoji = "\uD83C\uDFE6", // 🏦
+            label = strings.accountsTitle,
+            onClick = onAccounts,
+            accent = Color(0xFF4CAF50),
+        )
+    }
+    if (guard.hasAny("inventory.view")) {
+        modules += Module(
+            emoji = "\uD83D\uDDC4\uFE0F", // 🗄️
+            label = strings.inventoryTitle,
+            onClick = onInventory,
+            accent = Color(0xFF00BCD4),
+        )
+    }
+
+    // Always show at least POS + Clients as defaults if nothing is gated.
+    if (modules.isEmpty()) {
+        modules += Module("\uD83D\uDED2", strings.posTitle, onStartSale, Color(0xFFE91E63))
+        modules += Module("\uD83D\uDC65", strings.clientsTitle, onClients, Color(0xFF2196F3))
+    }
+
+    modules.chunked(2).forEach { pair ->
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(modifier = Modifier.weight(1f)) {
-                val a = pair[0]
-                ActionTile(emoji = a.emoji, label = a.label, onClick = a.onClick, accent = a.accent)
+                val m = pair[0]
+                ModuleCard(emoji = m.emoji, label = m.label, onClick = m.onClick, accent = m.accent)
             }
             Box(modifier = Modifier.weight(1f)) {
                 if (pair.size > 1) {
-                    val b = pair[1]
-                    ActionTile(emoji = b.emoji, label = b.label, onClick = b.onClick, accent = b.accent)
+                    val m = pair[1]
+                    ModuleCard(emoji = m.emoji, label = m.label, onClick = m.onClick, accent = m.accent)
                 } else {
                     Spacer(Modifier.fillMaxWidth())
                 }

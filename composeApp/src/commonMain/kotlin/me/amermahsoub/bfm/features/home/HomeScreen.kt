@@ -56,6 +56,17 @@ fun HomeScreen(onLogout: () -> Unit) {
                     onRecordPayment = { nav.push(Route.ClientsList) },
                     onAddExpense = { nav.push(Route.ExpenseForm()) },
                     onOrderClicked = { id -> nav.push(Route.PosOrderDetail(id)) },
+                    onClients = {
+                        if (visibleTabs.contains(HomeTab.CLIENTS)) selected = HomeTab.CLIENTS.name
+                        else nav.push(Route.ClientsList)
+                    },
+                    onProducts = {
+                        if (visibleTabs.contains(HomeTab.PRODUCTS)) selected = HomeTab.PRODUCTS.name
+                        else nav.push(Route.ProductsList)
+                    },
+                    onInventory = { nav.push(Route.InventoryList) },
+                    onAccounts = { nav.push(Route.AccountsList) },
+                    onExpenses = { nav.push(Route.ExpensesList) },
                 )
                 HomeTab.POS -> PosCartScreen(
                     onOpenShift = { nav.push(Route.OpenShift) },
