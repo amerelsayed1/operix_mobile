@@ -121,4 +121,5 @@ object EnStrings : AppStrings {
     override val editProfile = "Edit profile"
     override val changePassword = "Change password"
     override val language = "Language"
+    override val settings = "Settings"
 }

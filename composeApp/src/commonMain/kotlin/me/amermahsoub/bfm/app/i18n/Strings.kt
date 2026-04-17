@@ -145,6 +145,7 @@ interface AppStrings {
     val editProfile: String
     val changePassword: String
     val language: String
+    val settings: String
 }
 
 val LocalAppStrings = staticCompositionLocalOf<AppStrings> { EnStrings }

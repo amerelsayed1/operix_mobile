@@ -28,7 +28,7 @@ fun SettingsScreen(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ScreenTitle("Settings")
+        ScreenTitle(strings.settings)
         SectionTitle(strings.language)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(

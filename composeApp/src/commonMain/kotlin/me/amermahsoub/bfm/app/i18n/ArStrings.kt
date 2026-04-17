@@ -121,4 +121,5 @@ object ArStrings : AppStrings {
     override val editProfile = "تعديل الملف"
     override val changePassword = "تغيير كلمة المرور"
     override val language = "اللغة"
+    override val settings = "الإعدادات"
 }

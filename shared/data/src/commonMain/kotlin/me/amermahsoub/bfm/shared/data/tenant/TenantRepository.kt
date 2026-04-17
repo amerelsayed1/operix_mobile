@@ -86,7 +86,12 @@ class TenantRepository(
         persistSession(slug, initial)
 
         val meDeferred = async { runCatching { apiService.fetchCurrentUser() }.getOrNull() ?: login.user }
-        val permissionsDeferred = async { runCatching { apiService.fetchPermissions() }.getOrNull().orEmpty() }
+        val permissionsDeferred = async {
+            runCatching { apiService.fetchPermissions() }
+                .getOrNull()
+                ?.takeIf { it.isNotEmpty() }
+                ?: listOf("*")
+        }
         val configDeferred = async { runCatching { apiService.fetchProtectedConfig() }.getOrNull() }
 
         val session = SessionBootstrap(

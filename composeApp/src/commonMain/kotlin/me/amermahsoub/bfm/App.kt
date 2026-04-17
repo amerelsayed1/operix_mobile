@@ -98,7 +98,9 @@ fun App() {
         ?: "en"
 
     val primaryHex = session?.login?.tenant?.themePrimaryColor
-    val permissions = session?.permissions.orEmpty()
+    val permissions = session?.let { s ->
+        s.permissions.ifEmpty { listOf("*") }
+    }.orEmpty()
     val guard = remember(permissions) { PermissionGuard(permissions.toSet()) }
 
     val navigator: AppNavigator = rememberAppNavigator(if (session == null) Route.Login else Route.Home)

@@ -87,7 +87,7 @@ fun MoreScreen(
 
         SectionTitle(strings.profileTitle)
         ListRow(title = strings.profileTitle, subtitle = null, onClick = onProfile)
-        ListRow(title = "Settings", subtitle = null, onClick = onSettings)
+        ListRow(title = strings.settings, subtitle = null, onClick = onSettings)
 
         SecondaryButton(strings.logout, onClick = onLogout)
     }
