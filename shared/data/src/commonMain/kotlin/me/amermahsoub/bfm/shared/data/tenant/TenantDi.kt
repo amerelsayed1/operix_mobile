@@ -45,7 +45,7 @@ fun tenantBootstrapModule(
     }
     single { BfmDatabase(get()) }
     single { TenantApiService(get(), get(), get()) }
-    single { TenantRepository(get(), get(), get(), get(), get()) }
+    single { TenantRepository(get(), get(), get(), get(), get(), get()) }
     single { ConfigStore(get(), get()) }
     includes(platformTenantModule())
 }

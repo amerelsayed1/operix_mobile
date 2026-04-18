@@ -22,8 +22,14 @@ class TenantRepository(
     private val sessionStore: SessionStore,
     private val tenantContext: TenantContext,
     private val json: Json,
+    private val sessionPrefs: SessionPrefs,
 ) {
     private val queries = database.tenantQueries
+
+    companion object {
+        private const val PREF_SESSION_JSON = "session_json"
+        private const val PREF_SESSION_SLUG = "session_slug"
+    }
 
     private fun nowIso(): String = Instant.fromEpochMilliseconds(getTimeMillis()).toString()
 
@@ -116,34 +122,29 @@ class TenantRepository(
      * Safe to call on cold start — silently no-ops when nothing is stored
      * or the stored payload cannot be decoded (e.g. after a schema change).
      */
-    suspend fun restoreSession(): SessionBootstrap? = withContext(Dispatchers.Default) {
-        val row = queries.selectSession().executeAsOneOrNull() ?: return@withContext null
+    fun restoreSession(): SessionBootstrap? {
+        val sessionJson = sessionPrefs.getString(PREF_SESSION_JSON) ?: return null
+        val slug = sessionPrefs.getString(PREF_SESSION_SLUG) ?: return null
         val stored = runCatching {
-            json.decodeFromString<SessionBootstrap>(row.json)
+            json.decodeFromString<SessionBootstrap>(sessionJson)
         }.getOrElse {
-            // Corrupt / incompatible payload — drop it so we don't wedge the app.
-            queries.deleteSession()
-            return@withContext null
+            sessionPrefs.remove(PREF_SESSION_JSON)
+            sessionPrefs.remove(PREF_SESSION_SLUG)
+            return null
         }
-        tenantContext.setTenantSlug(row.tenant_slug)
+        tenantContext.setTenantSlug(slug)
         sessionStore.update(stored)
-        stored
+        return stored
     }
 
-    private suspend fun persistSession(slug: String, session: SessionBootstrap) {
-        withContext(Dispatchers.Default) {
-            queries.upsertSession(
-                tenant_slug = slug,
-                json = json.encodeToString(session),
-                updated_at = nowIso(),
-            )
-        }
+    private fun persistSession(slug: String, session: SessionBootstrap) {
+        sessionPrefs.putString(PREF_SESSION_SLUG, slug)
+        sessionPrefs.putString(PREF_SESSION_JSON, json.encodeToString(session))
     }
 
-    private suspend fun clearStoredSession() {
-        withContext(Dispatchers.Default) {
-            queries.deleteSession()
-        }
+    private fun clearStoredSession() {
+        sessionPrefs.remove(PREF_SESSION_JSON)
+        sessionPrefs.remove(PREF_SESSION_SLUG)
     }
 
     suspend fun clearTenantData(slug: String) {

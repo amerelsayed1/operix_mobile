@@ -79,14 +79,10 @@ fun App() {
     // User preferences (local state — persisted elsewhere would be ideal)
     var localeOverride by rememberSaveable { mutableStateOf<String?>(null) }
     var darkTheme by rememberSaveable { mutableStateOf(false) }
-    var sessionRestored by remember { mutableStateOf(false) }
 
-    // Hydrate any persisted session on cold start so the user doesn't have to
-    // log in again after closing the app.
-    LaunchedEffect(Unit) {
-        runCatching { tenantRepository.restoreSession() }
-        sessionRestored = true
-    }
+    // Hydrate any persisted session synchronously on cold start so the
+    // navigator starts at the correct route without a login flash.
+    remember { runCatching { tenantRepository.restoreSession() } }
 
     LaunchedEffect(selectedSlug) {
         tenantContext.setTenantSlug(selectedSlug)
@@ -130,10 +126,6 @@ fun App() {
                             .fillMaxSize()
                             .safeContentPadding(),
                     ) {
-                        if (!sessionRestored) {
-                            me.amermahsoub.bfm.app.ui.LoadingState()
-                            return@Box
-                        }
                         when (val route = navigator.current) {
                             Route.Login -> LoginScreen(
                                 initialTenantSlug = selectedSlug,

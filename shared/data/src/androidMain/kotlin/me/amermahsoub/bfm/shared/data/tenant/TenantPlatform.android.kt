@@ -15,6 +15,7 @@ actual class DatabaseDriverFactory(private val context: Context) {
 
 actual fun platformTenantModule(): Module = module {
     single { DatabaseDriverFactory(get()).createDriver() }
+    single { SessionPrefs(get()) }
 }
 
 actual fun platformHttpClientEngine(): HttpClientEngine = OkHttp.create()

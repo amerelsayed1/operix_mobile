@@ -16,6 +16,7 @@ actual class DatabaseDriverFactory {
 
 actual fun platformTenantModule(): Module = module {
     single { DatabaseDriverFactory().createDriver() }
+    single { SessionPrefs() }
 }
 
 actual fun platformHttpClientEngine(): HttpClientEngine = CIO.create()
