@@ -15,11 +15,12 @@ actual class DatabaseDriverFactory(private val context: Context) {
 
 actual fun platformTenantModule(): Module = module {
     single { DatabaseDriverFactory(get()).createDriver() }
+    single { SessionPrefs(get()) }
 }
 
 actual fun platformHttpClientEngine(): HttpClientEngine = OkHttp.create()
 
-actual fun defaultTenantBaseUrl(): String = "http://10.0.2.2:8000"
+actual fun defaultTenantBaseUrl(): String = "https://operixhq.com"
 
 actual fun normalizeTenantBaseUrl(baseUrl: String): String =
     baseUrl

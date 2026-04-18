@@ -22,8 +22,14 @@ class TenantRepository(
     private val sessionStore: SessionStore,
     private val tenantContext: TenantContext,
     private val json: Json,
+    private val sessionPrefs: SessionPrefs,
 ) {
     private val queries = database.tenantQueries
+
+    companion object {
+        private const val PREF_SESSION_JSON = "session_json"
+        private const val PREF_SESSION_SLUG = "session_slug"
+    }
 
     private fun nowIso(): String = Instant.fromEpochMilliseconds(getTimeMillis()).toString()
 
@@ -68,20 +74,30 @@ class TenantRepository(
         return response.tenant
     }
 
-    suspend fun loginAndBootstrapSession(slug: String, username: String, password: String): SessionBootstrap = coroutineScope {
+    suspend fun loginAndBootstrapSession(
+        slug: String,
+        email: String,
+        password: String,
+        rememberMe: Boolean = false,
+    ): SessionBootstrap = coroutineScope {
         tenantContext.setTenantSlug(slug)
-        val login = apiService.login(slug, username, password)
-        sessionStore.update(
-            SessionBootstrap(
-                login = login,
-                me = login.user,
-                permissions = emptyList(),
-                tenantConfig = null,
-            ),
+        val login = apiService.login(slug, email, password, rememberMe)
+        val initial = SessionBootstrap(
+            login = login,
+            me = login.user,
+            permissions = emptyList(),
+            tenantConfig = null,
         )
+        sessionStore.update(initial)
+        persistSession(slug, initial)
 
-        val meDeferred = async { apiService.fetchCurrentUser() }
-        val permissionsDeferred = async { apiService.fetchPermissions() }
+        val meDeferred = async { runCatching { apiService.fetchCurrentUser() }.getOrNull() ?: login.user }
+        val permissionsDeferred = async {
+            runCatching { apiService.fetchPermissions() }
+                .getOrNull()
+                ?.takeIf { it.isNotEmpty() }
+                ?: listOf("*")
+        }
         val configDeferred = async { runCatching { apiService.fetchProtectedConfig() }.getOrNull() }
 
         val session = SessionBootstrap(
@@ -91,12 +107,44 @@ class TenantRepository(
             tenantConfig = configDeferred.await(),
         )
         sessionStore.update(session)
+        persistSession(slug, session)
         session
     }
 
     suspend fun logout() {
         runCatching { apiService.logout() }
         sessionStore.clear()
+        clearStoredSession()
+    }
+
+    /**
+     * Hydrates [SessionStore] from the locally persisted session, if any.
+     * Safe to call on cold start — silently no-ops when nothing is stored
+     * or the stored payload cannot be decoded (e.g. after a schema change).
+     */
+    fun restoreSession(): SessionBootstrap? {
+        val sessionJson = sessionPrefs.getString(PREF_SESSION_JSON) ?: return null
+        val slug = sessionPrefs.getString(PREF_SESSION_SLUG) ?: return null
+        val stored = runCatching {
+            json.decodeFromString<SessionBootstrap>(sessionJson)
+        }.getOrElse {
+            sessionPrefs.remove(PREF_SESSION_JSON)
+            sessionPrefs.remove(PREF_SESSION_SLUG)
+            return null
+        }
+        tenantContext.setTenantSlug(slug)
+        sessionStore.update(stored)
+        return stored
+    }
+
+    private fun persistSession(slug: String, session: SessionBootstrap) {
+        sessionPrefs.putString(PREF_SESSION_SLUG, slug)
+        sessionPrefs.putString(PREF_SESSION_JSON, json.encodeToString(session))
+    }
+
+    private fun clearStoredSession() {
+        sessionPrefs.remove(PREF_SESSION_JSON)
+        sessionPrefs.remove(PREF_SESSION_SLUG)
     }
 
     suspend fun clearTenantData(slug: String) {

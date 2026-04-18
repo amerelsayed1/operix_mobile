@@ -16,10 +16,11 @@ actual class DatabaseDriverFactory {
 
 actual fun platformTenantModule(): Module = module {
     single { DatabaseDriverFactory().createDriver() }
+    single { SessionPrefs() }
 }
 
 actual fun platformHttpClientEngine(): HttpClientEngine = CIO.create()
 
-actual fun defaultTenantBaseUrl(): String = "http://127.0.0.1:8000"
+actual fun defaultTenantBaseUrl(): String = "https://operixhq.com"
 
 actual fun normalizeTenantBaseUrl(baseUrl: String): String = baseUrl

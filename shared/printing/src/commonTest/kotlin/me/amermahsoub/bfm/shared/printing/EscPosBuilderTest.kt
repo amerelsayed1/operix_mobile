@@ -38,11 +38,12 @@ class EscPosBuilderTest {
         )
 
         val text = builder.buildReceipt(receipt).decodeToString()
-        val wrappedNameLine = text.lines().firstOrNull { it.contains("Very Long Pro") }
-        val continuationLine = text.lines().firstOrNull { it.contains("duct Name For") }
+        // nameWidth = (32 - 5 - 10 - 10).coerceAtLeast(8) = 8
+        val firstChunk = text.lines().firstOrNull { it.contains("Very Lon") }
+        val secondChunk = text.lines().firstOrNull { it.contains("g Produc") }
 
-        assertFalse(wrappedNameLine.isNullOrBlank())
-        assertFalse(continuationLine.isNullOrBlank())
+        assertFalse(firstChunk.isNullOrBlank())
+        assertFalse(secondChunk.isNullOrBlank())
         assertContains(text, "2")
         assertContains(text, "10.00")
         assertContains(text, "20.00")

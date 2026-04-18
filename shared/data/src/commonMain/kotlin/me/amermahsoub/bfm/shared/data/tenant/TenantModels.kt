@@ -54,16 +54,47 @@ data class AppConfig(
     @SerialName("force_update") val forceUpdate: Boolean,
 )
 
+/**
+ * Public tenant config returned by `GET /api/v1/tenant-config/{slug}`.
+ *
+ * The live response is `{ "tenant": { id, slug, name, logo_url },
+ * "theme": { primaryColor, ..., logoUrl, appName, themeMode } }`.
+ * Accessor properties expose flat fields for legacy call sites.
+ */
 @Serializable
 data class PublicTenantConfig(
+    val tenant: PublicTenantInfo,
+    val theme: PublicTenantTheme? = null,
+) {
+    val slug: String get() = tenant.slug
+    val name: String get() = theme?.appName ?: tenant.name
+    val logoUrl: String? get() = tenant.logoUrl ?: theme?.logoUrl
+    val themePrimaryColor: String? get() = theme?.primaryColor
+    val locale: String? get() = null
+    val localeDirection: String? get() = null
+    val currencyCode: String? get() = null
+    val timezone: String? get() = null
+}
+
+@Serializable
+data class PublicTenantInfo(
+    val id: Long? = null,
     val slug: String,
     val name: String,
     @SerialName("logo_url") val logoUrl: String? = null,
-    val locale: String? = null,
-    @SerialName("locale_direction") val localeDirection: String? = null,
-    @SerialName("theme_primary_color") val themePrimaryColor: String? = null,
-    @SerialName("currency_code") val currencyCode: String? = null,
-    val timezone: String? = null,
+)
+
+@Serializable
+data class PublicTenantTheme(
+    val primaryColor: String? = null,
+    val secondaryColor: String? = null,
+    val accentColor: String? = null,
+    val backgroundColor: String? = null,
+    val textColor: String? = null,
+    val logoUrl: String? = null,
+    val faviconUrl: String? = null,
+    val appName: String? = null,
+    val themeMode: String? = null,
 )
 
 @Serializable
@@ -81,15 +112,20 @@ data class BrandingConfig(
 )
 
 @Serializable
-data class LoginRequest(val username: String, val password: String)
+data class LoginRequest(
+    val email: String,
+    val password: String,
+    @SerialName("remember_me") val rememberMe: Boolean = false,
+)
 
 @Serializable
 data class LoginResponse(
     val token: String,
     @SerialName("token_type") val tokenType: String = "Bearer",
     @SerialName("expires_in") val expiresIn: Long? = null,
+    @SerialName("remember_me") val rememberMe: Boolean = false,
     val user: SessionUser,
-    val tenant: SessionTenant,
+    val tenant: SessionTenant? = null,
     @SerialName("redirect_to") val redirectTo: String? = null,
 )
 
@@ -111,11 +147,27 @@ data class SessionUser(
     val name: String,
     val email: String? = null,
     @SerialName("phone") val phoneNumber: String? = null,
+    @SerialName("is_active") val isActive: Boolean = true,
+    @SerialName("tenant_id") val tenantId: Long? = null,
     @SerialName("role_id") val roleId: Long? = null,
-    val role: String? = null,
+    val role: RoleRef? = null,
+    val roles: List<String> = emptyList(),
     val locale: String? = null,
+    @SerialName("business_name") val businessName: String? = null,
+    @SerialName("business_logo") val businessLogo: String? = null,
+    @SerialName("default_currency") val defaultCurrency: String? = null,
+    @SerialName("theme_mode") val themeMode: String? = null,
+    @SerialName("theme_primary_color") val themePrimaryColor: String? = null,
     @SerialName("drawer_account") val drawerAccount: AccountRef? = null,
     @SerialName("default_account") val defaultAccount: AccountRef? = null,
+) {
+    val roleName: String? get() = role?.name
+}
+
+@Serializable
+data class RoleRef(
+    val id: Long? = null,
+    val name: String? = null,
 )
 
 @Serializable

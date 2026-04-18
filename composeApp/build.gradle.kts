@@ -23,6 +23,10 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
+            implementation(libs.camerax.camera2)
+            implementation(libs.camerax.lifecycle)
+            implementation(libs.camerax.view)
+            implementation(libs.mlkit.barcode)
         }
         commonMain.dependencies {
             implementation(projects.shared.printing)
@@ -37,7 +41,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.koin.core)
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+            implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -46,7 +50,24 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
+        androidInstrumentedTest.dependencies {
+            implementation(libs.junit)
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.androidx.espresso.core)
+            implementation("androidx.test:runner:1.6.2")
+            implementation("androidx.test:rules:1.6.1")
+            implementation("androidx.compose.ui:ui-test-junit4-android:1.9.0")
+            implementation("tools.fastlane:screengrab:2.1.1")
+            // Ktor MockEngine so screenshots render populated data without a
+            // live backend. Matches the Ktor version in libs.versions.toml.
+            implementation("io.ktor:ktor-client-mock:3.2.3")
+        }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "me.amermahsoub.bfm.composeapp.resources"
 }
 
 android {
@@ -59,6 +80,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -78,6 +100,7 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
 }
 
 compose.desktop {

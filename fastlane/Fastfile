@@ -1,0 +1,17 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build debug + androidTest APKs and capture screenshots via Espresso"
+  lane :screenshots do
+    gradle(task: "composeApp:clean")
+    gradle(task: "composeApp:assembleDebug")
+    gradle(task: "composeApp:assembleDebugAndroidTest")
+
+    screengrab
+  end
+
+  desc "Just run screengrab against already-built APKs (skip gradle build)"
+  lane :capture do
+    screengrab
+  end
+end
