@@ -38,10 +38,39 @@ jobs:
       - name: Set up Android SDK
         run: |
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-35" >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "platforms;android-35" >/dev/null 2>&1 || true
 
       - name: Run unit tests
-        run: ./gradlew shared:domain:jvmTest shared:data:jvmTest shared:printing:jvmTest composeApp:jvmTest --no-daemon --stacktrace
+        id: tests
+        continue-on-error: true
+        run: |
+          ./gradlew shared:domain:jvmTest shared:data:jvmTest shared:printing:jvmTest composeApp:jvmTest --no-daemon --stacktrace 2>&1 | tee build-output.txt
+          exit ${PIPESTATUS[0]}
+
+      - name: Post failure details to PR
+        if: steps.tests.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let output = 'No build output captured';
+            try {
+              const full = fs.readFileSync('build-output.txt', 'utf8');
+              const lines = full.split('\n');
+              output = lines.slice(-150).join('\n');
+            } catch (e) {
+              output = `Error reading build output: ${e.message}`;
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `## CI Failure Details\n\`\`\`\n${output.slice(0, 60000)}\n\`\`\``
+            });
+
+      - name: Fail if tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
 
       - name: Upload test reports
         if: always()
