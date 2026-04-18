@@ -61,9 +61,19 @@ jobs:
             try {
               const full = fs.readFileSync('build-output.txt', 'utf8');
               const lines = full.split('\n');
-              const errorLines = lines.filter(l => /^e:|error:|FAILURE|BUILD FAILED|Unresolved|not found|cannot find|mismatch/.test(l));
-              const tail = lines.slice(-30).join('\n');
-              output = '=== COMPILER ERRORS ===\n' + errorLines.join('\n') + '\n\n=== TAIL ===\n' + tail;
+              const sections = [];
+              const errorLines = lines.filter(l => /^e:|^w:.*error/i.test(l));
+              if (errorLines.length > 0) sections.push('=== COMPILER ERRORS ===\n' + errorLines.join('\n'));
+              for (let i = 0; i < lines.length; i++) {
+                if (/^\* What went wrong/.test(lines[i])) {
+                  sections.push('=== WHAT WENT WRONG ===\n' + lines.slice(i, i + 30).join('\n'));
+                  break;
+                }
+              }
+              const failLines = lines.filter(l => /FAILURE:|BUILD FAILED|Exception:|Caused by:.*[A-Z]/.test(l));
+              if (failLines.length > 0) sections.push('=== FAILURE LINES ===\n' + failLines.join('\n'));
+              sections.push('=== LAST 50 LINES ===\n' + lines.slice(-50).join('\n'));
+              output = sections.join('\n\n');
             } catch (e) {
               output = `Error reading build output: ${e.message}`;
             }
