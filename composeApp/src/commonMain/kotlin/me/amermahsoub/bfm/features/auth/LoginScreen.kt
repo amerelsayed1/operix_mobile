@@ -1,6 +1,7 @@
 package me.amermahsoub.bfm.features.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,10 +10,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -20,13 +25,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import me.amermahsoub.bfm.app.i18n.appStrings
 import me.amermahsoub.bfm.app.ui.PrimaryButton
@@ -45,6 +55,7 @@ fun LoginScreen(
     val vm = rememberFeatureViewModel { LoginViewModel(tenantRepository, initialTenantSlug) }
     val state by vm.state.collectAsState()
     val strings = appStrings()
+    var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.loggedIn) {
         if (state.loggedIn) {
@@ -57,7 +68,7 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         val primary = MaterialTheme.colorScheme.primary
         val onPrimary = MaterialTheme.colorScheme.onPrimary
@@ -94,8 +105,8 @@ fun LoginScreen(
                 if (tenantName != null) {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Tenant: $tenantName",
-                        style = MaterialTheme.typography.labelMedium,
+                        tenantName,
+                        style = MaterialTheme.typography.labelLarge,
                         color = onPrimary,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -103,10 +114,15 @@ fun LoginScreen(
             }
         }
 
-        ElevatedCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Spacer(Modifier.height(24.dp))
+
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
             Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 OutlinedTextField(
                     value = state.tenantSlug,
@@ -115,6 +131,7 @@ fun LoginScreen(
                     placeholder = { Text(strings.companyCodeHint) },
                     singleLine = true,
                     enabled = !state.submitting,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
@@ -124,6 +141,8 @@ fun LoginScreen(
                     placeholder = { Text(strings.usernameHint) },
                     singleLine = true,
                     enabled = !state.submitting,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
@@ -131,13 +150,28 @@ fun LoginScreen(
                     onValueChange = vm::updatePassword,
                     label = { Text(strings.password) },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        val label = if (passwordVisible) "Hide" else "Show"
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Text(
+                                if (passwordVisible) "\uD83D\uDE48" else "\uD83D\uDC41",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                    },
                     enabled = !state.submitting,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 state.error?.let { err ->
-                    Text(err.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        err.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
 
                 if (state.offlineNotice) {
@@ -148,10 +182,22 @@ fun LoginScreen(
                     )
                 }
 
+                Spacer(Modifier.height(4.dp))
+
                 PrimaryButton(
                     text = if (state.submitting) strings.loading else strings.accessPortal,
                     onClick = { vm.submit() },
                     enabled = !state.submitting,
+                )
+
+                Text(
+                    strings.forgotPassword,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !state.submitting) { },
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
