@@ -25,8 +25,12 @@ fun TenantTheme(
 ) {
     val primary = parseHexColor(primaryColorHex) ?: DefaultPrimary
     val scheme = buildColorScheme(primary, darkTheme)
+    val statusBarDarkIcons = !darkTheme && contrastingOn(primary) != Color.White
     CompositionLocalProvider(LocalTenantPrimary provides primary) {
-        MaterialTheme(colorScheme = scheme, typography = appTypography(), content = content)
+        MaterialTheme(colorScheme = scheme, typography = appTypography()) {
+            SystemBarColor(statusBarColor = primary, darkIcons = statusBarDarkIcons)
+            content()
+        }
     }
 }
 
