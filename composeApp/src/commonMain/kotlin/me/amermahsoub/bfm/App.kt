@@ -22,6 +22,7 @@ import me.amermahsoub.bfm.app.i18n.ProvideAppStrings
 import me.amermahsoub.bfm.app.i18n.appStrings
 import me.amermahsoub.bfm.app.nav.AppNavigator
 import me.amermahsoub.bfm.app.nav.LocalAppNavigator
+import me.amermahsoub.bfm.app.nav.PlatformBackHandler
 import me.amermahsoub.bfm.app.nav.Route
 import me.amermahsoub.bfm.app.nav.rememberAppNavigator
 import me.amermahsoub.bfm.app.permission.LocalPermissionGuard
@@ -121,6 +122,9 @@ fun App() {
                 Scaffold(
                     snackbarHost = { SnackbarHost(snackbar) },
                 ) { padding ->
+                    PlatformBackHandler(enabled = navigator.canPop) {
+                        navigator.pop()
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

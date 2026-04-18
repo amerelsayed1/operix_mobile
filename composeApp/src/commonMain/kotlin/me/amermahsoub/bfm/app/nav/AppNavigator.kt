@@ -15,6 +15,7 @@ class AppNavigator internal constructor(initial: Route) {
     private val _stack = mutableStateListOf(initial)
     val stack: List<Route> get() = _stack
     val current: Route get() = _stack.last()
+    val canPop: Boolean get() = _stack.size > 1
 
     private val _results = mutableMapOf<String, Any?>()
 
