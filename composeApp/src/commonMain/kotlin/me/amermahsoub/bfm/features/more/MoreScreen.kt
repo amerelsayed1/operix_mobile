@@ -41,6 +41,10 @@ fun MoreScreen(
     onAccounts: () -> Unit,
     onShiftHistory: () -> Unit,
     onCashMovement: () -> Unit,
+    onReports: () -> Unit,
+    onInvoices: () -> Unit,
+    onSuppliers: () -> Unit,
+    onNotifications: () -> Unit,
     onProfile: () -> Unit,
     onSettings: () -> Unit,
     onLogout: () -> Unit,
@@ -84,6 +88,18 @@ fun MoreScreen(
         IfPermitted("expenses.view", "expenses.create") {
             ListRow(title = strings.expensesTitle, subtitle = null, onClick = onExpenses)
         }
+
+        SectionTitle(strings.reportsTitle)
+        IfPermitted("reports.view", "dashboard.view") {
+            ListRow(title = strings.reportsTitle, subtitle = null, onClick = onReports)
+        }
+        IfPermitted("invoices.view", "pos.view") {
+            ListRow(title = strings.invoicesTitle, subtitle = null, onClick = onInvoices)
+        }
+        IfPermitted("suppliers.view") {
+            ListRow(title = strings.suppliersTitle, subtitle = null, onClick = onSuppliers)
+        }
+        ListRow(title = strings.notificationsTitle, subtitle = null, onClick = onNotifications)
 
         SectionTitle(strings.profileTitle)
         ListRow(title = strings.profileTitle, subtitle = null, onClick = onProfile)

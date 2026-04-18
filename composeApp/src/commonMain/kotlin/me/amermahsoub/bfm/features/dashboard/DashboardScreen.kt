@@ -51,6 +51,10 @@ fun DashboardScreen(
     onInventory: () -> Unit = {},
     onAccounts: () -> Unit = {},
     onExpenses: () -> Unit = {},
+    onReports: () -> Unit = {},
+    onInvoices: () -> Unit = {},
+    onSuppliers: () -> Unit = {},
+    onNotifications: () -> Unit = {},
 ) {
     val repo = remember { GlobalContext.get().get<DashboardRepository>() }
     val sessionStore = remember { GlobalContext.get().get<SessionStore>() }
@@ -88,6 +92,10 @@ fun DashboardScreen(
                     onExpenses = onExpenses,
                     onAccounts = onAccounts,
                     onInventory = onInventory,
+                    onReports = onReports,
+                    onInvoices = onInvoices,
+                    onSuppliers = onSuppliers,
+                    onNotifications = onNotifications,
                 )
 
                 // ── KPI summary ──
@@ -266,6 +274,10 @@ private fun ModuleGrid(
     onExpenses: () -> Unit,
     onAccounts: () -> Unit,
     onInventory: () -> Unit,
+    onReports: () -> Unit,
+    onInvoices: () -> Unit,
+    onSuppliers: () -> Unit,
+    onNotifications: () -> Unit,
 ) {
     val guard = LocalPermissionGuard.current
     val modules = mutableListOf<Module>()
@@ -318,6 +330,36 @@ private fun ModuleGrid(
             accent = Color(0xFF00BCD4),
         )
     }
+    if (guard.hasAny("reports.view", "dashboard.view")) {
+        modules += Module(
+            emoji = "\uD83D\uDCCA", // 📊
+            label = strings.reportsTitle,
+            onClick = onReports,
+            accent = Color(0xFF3F51B5),
+        )
+    }
+    if (guard.hasAny("invoices.view", "pos.view")) {
+        modules += Module(
+            emoji = "\uD83E\uDDFE", // 🧾
+            label = strings.invoicesTitle,
+            onClick = onInvoices,
+            accent = Color(0xFF607D8B),
+        )
+    }
+    if (guard.hasAny("suppliers.view")) {
+        modules += Module(
+            emoji = "\uD83D\uDE9A", // 🚚
+            label = strings.suppliersTitle,
+            onClick = onSuppliers,
+            accent = Color(0xFF795548),
+        )
+    }
+    modules += Module(
+        emoji = "\uD83D\uDD14", // 🔔
+        label = strings.notificationsTitle,
+        onClick = onNotifications,
+        accent = Color(0xFFFF5722),
+    )
 
     // Always show at least POS + Clients as defaults if nothing is gated.
     if (modules.isEmpty()) {

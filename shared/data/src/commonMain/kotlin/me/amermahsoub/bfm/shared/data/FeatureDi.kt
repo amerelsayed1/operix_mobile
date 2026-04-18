@@ -14,8 +14,16 @@ import me.amermahsoub.bfm.shared.data.pos.PosApi
 import me.amermahsoub.bfm.shared.data.pos.PosRepository
 import me.amermahsoub.bfm.shared.data.products.ProductsApi
 import me.amermahsoub.bfm.shared.data.products.ProductsRepository
+import me.amermahsoub.bfm.shared.data.invoices.InvoicesApi
+import me.amermahsoub.bfm.shared.data.invoices.InvoicesRepository
+import me.amermahsoub.bfm.shared.data.notifications.NotificationsApi
+import me.amermahsoub.bfm.shared.data.notifications.NotificationsRepository
 import me.amermahsoub.bfm.shared.data.profile.ProfileApi
 import me.amermahsoub.bfm.shared.data.profile.ProfileRepository
+import me.amermahsoub.bfm.shared.data.reports.ReportsApi
+import me.amermahsoub.bfm.shared.data.reports.ReportsRepository
+import me.amermahsoub.bfm.shared.data.suppliers.SuppliersApi
+import me.amermahsoub.bfm.shared.data.suppliers.SuppliersRepository
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -56,4 +64,20 @@ fun featureModule(): Module = module {
     // Profile
     single { ProfileApi(get(), get(), get()) }
     single { ProfileRepository(get()) }
+
+    // Reports
+    single { ReportsApi(get(), get(), get()) }
+    single { ReportsRepository(get()) }
+
+    // Invoices
+    single { InvoicesApi(get(), get(), get()) }
+    single { InvoicesRepository(get()) }
+
+    // Suppliers
+    single { SuppliersApi(get(), get(), get()) }
+    single { SuppliersRepository(get()) }
+
+    // Notifications
+    single { NotificationsApi(get(), get(), get()) }
+    single { NotificationsRepository(get()) }
 }

@@ -67,6 +67,10 @@ fun HomeScreen(onLogout: () -> Unit) {
                     onInventory = { nav.push(Route.InventoryList) },
                     onAccounts = { nav.push(Route.AccountsList) },
                     onExpenses = { nav.push(Route.ExpensesList) },
+                    onReports = { nav.push(Route.Reports) },
+                    onInvoices = { nav.push(Route.InvoicesList) },
+                    onSuppliers = { nav.push(Route.SuppliersList) },
+                    onNotifications = { nav.push(Route.Notifications) },
                 )
                 HomeTab.POS -> {
                     val scannedBarcode = nav.consumeResult<String>("barcode")
@@ -92,6 +96,10 @@ fun HomeScreen(onLogout: () -> Unit) {
                     onAccounts = { nav.push(Route.AccountsList) },
                     onShiftHistory = { nav.push(Route.ShiftHistory) },
                     onCashMovement = { nav.push(Route.CashMovement) },
+                    onReports = { nav.push(Route.Reports) },
+                    onInvoices = { nav.push(Route.InvoicesList) },
+                    onSuppliers = { nav.push(Route.SuppliersList) },
+                    onNotifications = { nav.push(Route.Notifications) },
                     onProfile = { nav.push(Route.Profile) },
                     onSettings = { nav.push(Route.Settings) },
                     onLogout = onLogout,

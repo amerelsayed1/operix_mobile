@@ -132,4 +132,49 @@ object EnStrings : AppStrings {
     override val currentPassword = "Current password"
     override val newPassword = "New password"
     override val confirmPassword = "Confirm password"
+
+    // Reports
+    override val reportsTitle = "Reports"
+    override val salesReport = "Sales Report"
+    override val expenseReport = "Expense Report"
+    override val profitReport = "Profit & Loss"
+    override val clientReport = "Client Report"
+    override val totalOrders = "Total orders"
+    override val averageOrder = "Avg. order"
+    override val netSales = "Net sales"
+    override val profitMargin = "Profit margin"
+    override val newClients = "New clients"
+    override val totalCollected = "Collected"
+    override val today = "Today"
+    override val thisWeek = "This week"
+    override val thisMonth = "This month"
+    override val thisYear = "This year"
+
+    // Invoices
+    override val invoicesTitle = "Invoices"
+    override val all = "All"
+    override val paid = "Paid"
+    override val unpaid = "Unpaid"
+    override val partial = "Partial"
+    override val issueDate = "Issue date"
+    override val dueDate = "Due date"
+    override val dueAmount = "Amount due"
+    override val items = "Items"
+    override val notes = "Notes"
+
+    // Suppliers
+    override val suppliersTitle = "Suppliers"
+    override val addSupplier = "Add supplier"
+    override val editSupplier = "Edit supplier"
+    override val supplierName = "Supplier name"
+    override val contactPerson = "Contact person"
+    override val taxNumber = "Tax number"
+    override val active = "Active"
+    override val inactive = "Inactive"
+    override val purchaseOrders = "Purchase orders"
+
+    // Notifications
+    override val notificationsTitle = "Notifications"
+    override val markAllRead = "Mark all read"
+    override val noNotifications = "No notifications yet"
 }

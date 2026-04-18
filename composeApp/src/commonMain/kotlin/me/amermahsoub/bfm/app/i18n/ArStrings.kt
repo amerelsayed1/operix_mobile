@@ -132,4 +132,49 @@ object ArStrings : AppStrings {
     override val currentPassword = "كلمة المرور الحالية"
     override val newPassword = "كلمة المرور الجديدة"
     override val confirmPassword = "تأكيد كلمة المرور"
+
+    // Reports
+    override val reportsTitle = "التقارير"
+    override val salesReport = "تقرير المبيعات"
+    override val expenseReport = "تقرير المصروفات"
+    override val profitReport = "الأرباح والخسائر"
+    override val clientReport = "تقرير العملاء"
+    override val totalOrders = "إجمالي الطلبات"
+    override val averageOrder = "متوسط الطلب"
+    override val netSales = "صافي المبيعات"
+    override val profitMargin = "هامش الربح"
+    override val newClients = "عملاء جدد"
+    override val totalCollected = "المحصّل"
+    override val today = "اليوم"
+    override val thisWeek = "هذا الأسبوع"
+    override val thisMonth = "هذا الشهر"
+    override val thisYear = "هذه السنة"
+
+    // Invoices
+    override val invoicesTitle = "الفواتير"
+    override val all = "الكل"
+    override val paid = "مدفوعة"
+    override val unpaid = "غير مدفوعة"
+    override val partial = "مدفوعة جزئيًا"
+    override val issueDate = "تاريخ الإصدار"
+    override val dueDate = "تاريخ الاستحقاق"
+    override val dueAmount = "المبلغ المستحق"
+    override val items = "العناصر"
+    override val notes = "ملاحظات"
+
+    // Suppliers
+    override val suppliersTitle = "الموردون"
+    override val addSupplier = "إضافة مورد"
+    override val editSupplier = "تعديل مورد"
+    override val supplierName = "اسم المورد"
+    override val contactPerson = "جهة الاتصال"
+    override val taxNumber = "الرقم الضريبي"
+    override val active = "نشط"
+    override val inactive = "غير نشط"
+    override val purchaseOrders = "أوامر الشراء"
+
+    // Notifications
+    override val notificationsTitle = "الإشعارات"
+    override val markAllRead = "قراءة الكل"
+    override val noNotifications = "لا توجد إشعارات"
 }

@@ -156,6 +156,51 @@ interface AppStrings {
     val currentPassword: String
     val newPassword: String
     val confirmPassword: String
+
+    // Reports
+    val reportsTitle: String
+    val salesReport: String
+    val expenseReport: String
+    val profitReport: String
+    val clientReport: String
+    val totalOrders: String
+    val averageOrder: String
+    val netSales: String
+    val profitMargin: String
+    val newClients: String
+    val totalCollected: String
+    val today: String
+    val thisWeek: String
+    val thisMonth: String
+    val thisYear: String
+
+    // Invoices
+    val invoicesTitle: String
+    val all: String
+    val paid: String
+    val unpaid: String
+    val partial: String
+    val issueDate: String
+    val dueDate: String
+    val dueAmount: String
+    val items: String
+    val notes: String
+
+    // Suppliers
+    val suppliersTitle: String
+    val addSupplier: String
+    val editSupplier: String
+    val supplierName: String
+    val contactPerson: String
+    val taxNumber: String
+    val active: String
+    val inactive: String
+    val purchaseOrders: String
+
+    // Notifications
+    val notificationsTitle: String
+    val markAllRead: String
+    val noNotifications: String
 }
 
 val LocalAppStrings = staticCompositionLocalOf<AppStrings> { EnStrings }

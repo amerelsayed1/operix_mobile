@@ -122,4 +122,27 @@ class TenantAwareApiUrlBuilder(
     // --- Billing (read-only) --------------------------------------------
     fun billingSubscription(): String = tenant("billing/subscription")
     fun billingTransactions(): String = tenant("billing/transactions")
+
+    // --- Reports ---------------------------------------------------------
+    fun reportsSales(): String = tenant("reports/sales")
+    fun reportsSalesTrend(): String = tenant("reports/sales-trend")
+    fun reportsTopProducts(): String = tenant("reports/top-products")
+    fun reportsExpenses(): String = tenant("reports/expenses")
+    fun reportsProfit(): String = tenant("reports/profit")
+    fun reportsClients(): String = tenant("reports/clients")
+
+    // --- Invoices --------------------------------------------------------
+    fun invoices(): String = tenant("invoices")
+    fun invoiceById(id: Long): String = tenant("invoices/$id")
+
+    // --- Suppliers -------------------------------------------------------
+    fun suppliers(): String = tenant("suppliers")
+    fun supplierById(id: Long): String = tenant("suppliers/$id")
+    fun purchaseOrders(): String = tenant("purchase-orders")
+    fun purchaseOrderById(id: Long): String = tenant("purchase-orders/$id")
+
+    // --- Notifications ---------------------------------------------------
+    fun notifications(): String = tenant("notifications")
+    fun notificationMarkRead(id: Long): String = tenant("notifications/$id/mark-read")
+    fun notificationsMarkAllRead(): String = tenant("notifications/mark-all-read")
 }

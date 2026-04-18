@@ -52,8 +52,15 @@ import me.amermahsoub.bfm.features.pos.ShiftHistoryScreen
 import me.amermahsoub.bfm.features.products.ProductDetailScreen
 import me.amermahsoub.bfm.features.products.ProductsListScreen
 import me.amermahsoub.bfm.features.profile.ChangePasswordScreen
+import me.amermahsoub.bfm.features.invoices.InvoiceDetailScreen
+import me.amermahsoub.bfm.features.invoices.InvoicesListScreen
+import me.amermahsoub.bfm.features.notifications.NotificationsScreen
 import me.amermahsoub.bfm.features.profile.EditProfileScreen
 import me.amermahsoub.bfm.features.profile.ProfileScreen
+import me.amermahsoub.bfm.features.reports.ReportsScreen
+import me.amermahsoub.bfm.features.suppliers.SupplierDetailScreen
+import me.amermahsoub.bfm.features.suppliers.SupplierFormScreen
+import me.amermahsoub.bfm.features.suppliers.SuppliersListScreen
 import me.amermahsoub.bfm.shared.data.tenant.ConfigStore
 import me.amermahsoub.bfm.shared.data.tenant.SessionStore
 import me.amermahsoub.bfm.shared.data.tenant.TenantContext
@@ -224,6 +231,32 @@ fun App() {
                             )
                             Route.EditProfile -> EditProfileScreen(onSaved = { navigator.pop() })
                             Route.ChangePassword -> ChangePasswordScreen(onDone = { navigator.pop() })
+
+                            // Reports
+                            Route.Reports -> ReportsScreen()
+
+                            // Invoices
+                            Route.InvoicesList -> InvoicesListScreen(
+                                onInvoice = { id -> navigator.push(Route.InvoiceDetail(id)) },
+                            )
+                            is Route.InvoiceDetail -> InvoiceDetailScreen(route.id)
+
+                            // Suppliers
+                            Route.SuppliersList -> SuppliersListScreen(
+                                onSupplier = { id -> navigator.push(Route.SupplierDetail(id)) },
+                                onAdd = { navigator.push(Route.SupplierForm()) },
+                            )
+                            is Route.SupplierDetail -> SupplierDetailScreen(
+                                id = route.id,
+                                onEdit = { navigator.push(Route.SupplierForm(route.id)) },
+                            )
+                            is Route.SupplierForm -> SupplierFormScreen(
+                                existingId = route.id,
+                                onSaved = { navigator.pop() },
+                            )
+
+                            // Notifications
+                            Route.Notifications -> NotificationsScreen()
 
                             // Misc
                             Route.BillingStatus -> ProfileScreen(

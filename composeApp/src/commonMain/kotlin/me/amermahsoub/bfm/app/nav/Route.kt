@@ -46,6 +46,21 @@ sealed class Route {
     data object EditProfile : Route()
     data object ChangePassword : Route()
 
+    // Reports
+    data object Reports : Route()
+
+    // Invoices
+    data object InvoicesList : Route()
+    data class InvoiceDetail(val id: Long) : Route()
+
+    // Suppliers
+    data object SuppliersList : Route()
+    data class SupplierDetail(val id: Long) : Route()
+    data class SupplierForm(val id: Long? = null) : Route()
+
+    // Notifications
+    data object Notifications : Route()
+
     // Misc
     data object BillingStatus : Route()
     data object Settings : Route()
