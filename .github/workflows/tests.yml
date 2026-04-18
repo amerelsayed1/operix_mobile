@@ -35,8 +35,10 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
+      - name: Set up Android SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" >/dev/null 2>&1 || true
 
       - name: Run unit tests
         run: ./gradlew shared:domain:jvmTest shared:data:jvmTest shared:printing:jvmTest composeApp:jvmTest --no-daemon --stacktrace
