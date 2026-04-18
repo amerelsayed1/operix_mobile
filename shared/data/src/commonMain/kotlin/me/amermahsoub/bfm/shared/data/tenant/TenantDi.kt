@@ -2,6 +2,8 @@ package me.amermahsoub.bfm.shared.data.tenant
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -40,6 +42,16 @@ fun tenantBootstrapModule(
             install(TenantNetworkInterceptor) {
                 tokenProvider = { sessionStore.token }
                 tenantSlugProvider = { tenantContext.tenantSlug.value }
+            }
+            HttpResponseValidator {
+                handleResponseExceptionWithRequest { exception, _ ->
+                    if (exception is ResponseException &&
+                        exception.response.status.value == 401
+                    ) {
+                        sessionStore.notifyTokenExpired()
+                    }
+                    throw exception
+                }
             }
         }
     }

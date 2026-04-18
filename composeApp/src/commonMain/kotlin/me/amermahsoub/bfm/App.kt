@@ -3,9 +3,12 @@ package me.amermahsoub.bfm
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -87,6 +90,13 @@ fun App() {
     // User preferences (local state — persisted elsewhere would be ideal)
     var localeOverride by rememberSaveable { mutableStateOf<String?>(null) }
     var darkTheme by rememberSaveable { mutableStateOf(false) }
+    var showSessionExpired by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        sessionStore.tokenExpired.collect {
+            if (!showSessionExpired) showSessionExpired = true
+        }
+    }
 
     // Hydrate any persisted session synchronously on cold start so the
     // navigator starts at the correct route without a login flash.
@@ -129,6 +139,25 @@ fun App() {
                 Scaffold(
                     snackbarHost = { SnackbarHost(snackbar) },
                 ) { padding ->
+                    if (showSessionExpired) {
+                        val strings = appStrings()
+                        AlertDialog(
+                            onDismissRequest = {},
+                            title = { Text(strings.sessionExpiredTitle) },
+                            text = { Text(strings.sessionExpiredMessage) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showSessionExpired = false
+                                    appScope.launch {
+                                        tenantRepository.logout()
+                                        navigator.reset(Route.Login)
+                                    }
+                                }) {
+                                    Text(strings.sessionExpiredAction)
+                                }
+                            },
+                        )
+                    }
                     PlatformBackHandler(enabled = navigator.canPop) {
                         navigator.pop()
                     }

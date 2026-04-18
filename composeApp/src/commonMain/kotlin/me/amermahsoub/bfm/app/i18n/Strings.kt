@@ -197,6 +197,11 @@ interface AppStrings {
     val inactive: String
     val purchaseOrders: String
 
+    // Session
+    val sessionExpiredTitle: String
+    val sessionExpiredMessage: String
+    val sessionExpiredAction: String
+
     // Notifications
     val notificationsTitle: String
     val markAllRead: String

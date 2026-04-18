@@ -173,6 +173,11 @@ object ArStrings : AppStrings {
     override val inactive = "غير نشط"
     override val purchaseOrders = "أوامر الشراء"
 
+    // Session
+    override val sessionExpiredTitle = "انتهت الجلسة"
+    override val sessionExpiredMessage = "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى للمتابعة."
+    override val sessionExpiredAction = "تسجيل الدخول"
+
     // Notifications
     override val notificationsTitle = "الإشعارات"
     override val markAllRead = "قراءة الكل"

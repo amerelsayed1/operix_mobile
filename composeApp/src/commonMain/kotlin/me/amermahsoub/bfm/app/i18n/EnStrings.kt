@@ -173,6 +173,11 @@ object EnStrings : AppStrings {
     override val inactive = "Inactive"
     override val purchaseOrders = "Purchase orders"
 
+    // Session
+    override val sessionExpiredTitle = "Session Expired"
+    override val sessionExpiredMessage = "Your session has expired. Please sign in again to continue."
+    override val sessionExpiredAction = "Sign in"
+
     // Notifications
     override val notificationsTitle = "Notifications"
     override val markAllRead = "Mark all read"
