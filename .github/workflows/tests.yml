@@ -59,21 +59,7 @@ jobs:
             const fs = require('fs');
             let output = 'No build output captured';
             try {
-              const full = fs.readFileSync('build-output.txt', 'utf8');
-              const lines = full.split('\n');
-              const sections = [];
-              const errorLines = lines.filter(l => /^e:|^w:.*error/i.test(l));
-              if (errorLines.length > 0) sections.push('=== COMPILER ERRORS ===\n' + errorLines.join('\n'));
-              for (let i = 0; i < lines.length; i++) {
-                if (/^\* What went wrong/.test(lines[i])) {
-                  sections.push('=== WHAT WENT WRONG ===\n' + lines.slice(i, i + 30).join('\n'));
-                  break;
-                }
-              }
-              const failLines = lines.filter(l => /FAILURE:|BUILD FAILED|Exception:|Caused by:.*[A-Z]/.test(l));
-              if (failLines.length > 0) sections.push('=== FAILURE LINES ===\n' + failLines.join('\n'));
-              sections.push('=== LAST 50 LINES ===\n' + lines.slice(-50).join('\n'));
-              output = sections.join('\n\n');
+              output = fs.readFileSync('build-output.txt', 'utf8');
             } catch (e) {
               output = `Error reading build output: ${e.message}`;
             }
@@ -81,7 +67,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: `## CI Failure Details\n\`\`\`\n${output.slice(0, 60000)}\n\`\`\``
+              body: `## CI Full Build Output\n\`\`\`\n${output.slice(0, 60000)}\n\`\`\``
             });
 
       - name: Fail if tests failed
