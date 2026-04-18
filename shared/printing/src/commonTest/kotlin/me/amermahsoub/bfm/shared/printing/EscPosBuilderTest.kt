@@ -38,9 +38,9 @@ class EscPosBuilderTest {
         )
 
         val text = builder.buildReceipt(receipt).decodeToString()
-        // nameWidth = (32 - 5 - 10 - 10) = 7, so name wraps in 7-char chunks
-        val firstChunk = text.lines().firstOrNull { it.contains("Very Lo") }
-        val secondChunk = text.lines().firstOrNull { it.contains("ng Prod") }
+        // nameWidth = (32 - 5 - 10 - 10).coerceAtLeast(8) = 8
+        val firstChunk = text.lines().firstOrNull { it.contains("Very Lon") }
+        val secondChunk = text.lines().firstOrNull { it.contains("g Produc") }
 
         assertFalse(firstChunk.isNullOrBlank())
         assertFalse(secondChunk.isNullOrBlank())
