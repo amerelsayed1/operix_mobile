@@ -42,6 +42,7 @@ import me.amermahsoub.bfm.features.inventory.InventoryDetailScreen
 import me.amermahsoub.bfm.features.inventory.InventoryListScreen
 import me.amermahsoub.bfm.features.more.SettingsScreen
 import me.amermahsoub.bfm.features.pos.CashMovementScreen
+import me.amermahsoub.bfm.features.pos.scanner.BarcodeScannerScreen
 import me.amermahsoub.bfm.features.pos.CloseShiftScreen
 import me.amermahsoub.bfm.features.pos.OpenShiftScreen
 import me.amermahsoub.bfm.features.pos.PosOrderDetailScreen
@@ -157,6 +158,12 @@ fun App() {
                             Route.CloseShift -> CloseShiftScreen(onClosed = { navigator.pop() })
                             Route.CashMovement -> CashMovementScreen(onSaved = { navigator.pop() })
                             Route.ShiftHistory -> ShiftHistoryScreen()
+                            Route.BarcodeScanner -> BarcodeScannerScreen(
+                                onScanned = { barcode ->
+                                    navigator.popWithResult("barcode", barcode)
+                                },
+                                onClose = { navigator.pop() },
+                            )
 
                             // Clients
                             Route.ClientsList -> ClientsListScreen(

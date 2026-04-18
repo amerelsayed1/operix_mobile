@@ -16,6 +16,7 @@ sealed class Route {
     data object OpenShift : Route()
     data object CloseShift : Route()
     data object CashMovement : Route()
+    data object BarcodeScanner : Route()
 
     // Clients
     data object ClientsList : Route()

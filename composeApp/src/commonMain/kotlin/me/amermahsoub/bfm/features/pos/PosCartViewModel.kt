@@ -99,6 +99,24 @@ class PosCartViewModel(
         }
     }
 
+    fun searchByBarcode(barcode: String) {
+        _state.value = _state.value.copy(searchQuery = barcode)
+        scope.launch {
+            _state.value = _state.value.copy(searching = true)
+            val results = repository.searchProducts(barcode)
+            val exact = results.firstOrNull { it.barcode == barcode }
+            if (exact != null) {
+                addToCart(exact)
+                _state.value = _state.value.copy(searchQuery = "", searchResults = emptyList(), searching = false)
+            } else if (results.size == 1) {
+                addToCart(results.first())
+                _state.value = _state.value.copy(searchQuery = "", searchResults = emptyList(), searching = false)
+            } else {
+                _state.value = _state.value.copy(searchResults = results, searching = false)
+            }
+        }
+    }
+
     fun addToCart(product: PosProduct) {
         val lines = _state.value.lines.toMutableList()
         val idx = lines.indexOfFirst { it.product.id == product.id }

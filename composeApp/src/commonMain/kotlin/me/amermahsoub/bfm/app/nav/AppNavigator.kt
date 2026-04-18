@@ -16,6 +16,8 @@ class AppNavigator internal constructor(initial: Route) {
     val stack: List<Route> get() = _stack
     val current: Route get() = _stack.last()
 
+    private val _results = mutableMapOf<String, Any?>()
+
     fun push(route: Route) {
         _stack.add(route)
     }
@@ -35,6 +37,17 @@ class AppNavigator internal constructor(initial: Route) {
         if (_stack.size <= 1) return false
         _stack.removeAt(_stack.lastIndex)
         return true
+    }
+
+    fun popWithResult(key: String, value: Any?) {
+        _results[key] = value
+        pop()
+    }
+
+    fun <T> consumeResult(key: String): T? {
+        @Suppress("UNCHECKED_CAST")
+        val value = _results.remove(key) as? T
+        return value
     }
 }
 

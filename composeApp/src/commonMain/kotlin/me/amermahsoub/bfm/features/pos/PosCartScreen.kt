@@ -45,6 +45,8 @@ fun PosCartScreen(
     onCloseShift: () -> Unit,
     onOrderPlaced: (Long) -> Unit,
     onViewOrders: () -> Unit,
+    onScanBarcode: () -> Unit = {},
+    scannedBarcode: String? = null,
 ) {
     val koin = GlobalContext.get()
     val repo = remember { koin.get<PosRepository>() }
@@ -59,6 +61,12 @@ fun PosCartScreen(
         state.submittedOrderId?.let { id ->
             vm.acknowledgeSubmitted()
             onOrderPlaced(id)
+        }
+    }
+
+    LaunchedEffect(scannedBarcode) {
+        scannedBarcode?.let { barcode ->
+            vm.searchByBarcode(barcode)
         }
     }
 
@@ -103,14 +111,31 @@ fun PosCartScreen(
                     }
                 }
 
-                // Search
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = vm::updateSearch,
-                    label = { Text(strings.searchProducts) },
-                    singleLine = true,
+                // Search + scan
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = state.searchQuery,
+                        onValueChange = vm::updateSearch,
+                        label = { Text(strings.searchProducts) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ElevatedCard(
+                        onClick = onScanBarcode,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text("\uD83D\uDCF7", style = MaterialTheme.typography.titleLarge)
+                            Text(strings.scanBarcode, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
 
                 if (state.searchResults.isNotEmpty()) {
                     SectionTitle(strings.productsTitle)

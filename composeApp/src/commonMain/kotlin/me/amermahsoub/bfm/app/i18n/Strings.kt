@@ -95,6 +95,10 @@ interface AppStrings {
     val orders: String
     val receiptNumber: String
     val drawerAccount: String
+    val cameraPermissionRequired: String
+    val grantPermission: String
+    val pointCameraAtBarcode: String
+    val scannerNotAvailable: String
 
     // Clients
     val clientsTitle: String

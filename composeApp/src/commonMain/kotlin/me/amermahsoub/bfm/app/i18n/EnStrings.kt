@@ -77,6 +77,10 @@ object EnStrings : AppStrings {
     override val orders = "Orders"
     override val receiptNumber = "Receipt #"
     override val drawerAccount = "Drawer account"
+    override val cameraPermissionRequired = "Camera permission is required to scan barcodes"
+    override val grantPermission = "Grant permission"
+    override val pointCameraAtBarcode = "Point camera at a barcode"
+    override val scannerNotAvailable = "Barcode scanner is not available on this platform"
 
     override val clientsTitle = "Clients"
     override val addClient = "Add client"

@@ -77,6 +77,10 @@ object ArStrings : AppStrings {
     override val orders = "الطلبات"
     override val receiptNumber = "رقم الإيصال"
     override val drawerAccount = "حساب الدرج"
+    override val cameraPermissionRequired = "يجب السماح بالوصول للكاميرا لمسح الباركود"
+    override val grantPermission = "منح الإذن"
+    override val pointCameraAtBarcode = "وجّه الكاميرا نحو الباركود"
+    override val scannerNotAvailable = "ماسح الباركود غير متوفر على هذه المنصة"
 
     override val clientsTitle = "العملاء"
     override val addClient = "إضافة عميل"

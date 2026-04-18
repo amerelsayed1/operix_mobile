@@ -68,12 +68,17 @@ fun HomeScreen(onLogout: () -> Unit) {
                     onAccounts = { nav.push(Route.AccountsList) },
                     onExpenses = { nav.push(Route.ExpensesList) },
                 )
-                HomeTab.POS -> PosCartScreen(
-                    onOpenShift = { nav.push(Route.OpenShift) },
-                    onCloseShift = { nav.push(Route.CloseShift) },
-                    onOrderPlaced = { id -> nav.push(Route.PosOrderDetail(id)) },
-                    onViewOrders = { nav.push(Route.PosOrders) },
-                )
+                HomeTab.POS -> {
+                    val scannedBarcode = nav.consumeResult<String>("barcode")
+                    PosCartScreen(
+                        onOpenShift = { nav.push(Route.OpenShift) },
+                        onCloseShift = { nav.push(Route.CloseShift) },
+                        onOrderPlaced = { id -> nav.push(Route.PosOrderDetail(id)) },
+                        onViewOrders = { nav.push(Route.PosOrders) },
+                        onScanBarcode = { nav.push(Route.BarcodeScanner) },
+                        scannedBarcode = scannedBarcode,
+                    )
+                }
                 HomeTab.CLIENTS -> ClientsListScreen(
                     onClient = { id -> nav.push(Route.ClientDetail(id)) },
                     onAddClient = { nav.push(Route.ClientForm()) },
