@@ -10,6 +10,9 @@ kotlin {
         commonMain.dependencies {
             api(projects.shared.core)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
     }
 }
 
