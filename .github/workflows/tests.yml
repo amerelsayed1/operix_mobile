@@ -61,7 +61,9 @@ jobs:
             try {
               const full = fs.readFileSync('build-output.txt', 'utf8');
               const lines = full.split('\n');
-              output = lines.slice(-150).join('\n');
+              const errorLines = lines.filter(l => /^e:|error:|FAILURE|BUILD FAILED|Unresolved|not found|cannot find|mismatch/.test(l));
+              const tail = lines.slice(-30).join('\n');
+              output = '=== COMPILER ERRORS ===\n' + errorLines.join('\n') + '\n\n=== TAIL ===\n' + tail;
             } catch (e) {
               output = `Error reading build output: ${e.message}`;
             }
