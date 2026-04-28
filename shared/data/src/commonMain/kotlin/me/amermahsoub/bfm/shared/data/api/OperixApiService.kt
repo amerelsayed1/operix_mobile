@@ -9,12 +9,18 @@ import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import me.amermahsoub.bfm.shared.data.models.Account
 import me.amermahsoub.bfm.shared.data.models.AccountStatementEntry
 import me.amermahsoub.bfm.shared.data.models.AccountingPeriod
@@ -65,17 +71,47 @@ class OperixApiService(
     private fun url(slug: String, path: String): String =
         "${urlBuilder.base}/api/v1/$slug/$path"
 
+    // ── Error handling ────────────────────────────────────────────────────
+
+    private suspend fun HttpResponse.checkError() {
+        if (status.isSuccess()) return
+        val code = status.value
+        val text = try { bodyAsText() } catch (_: Exception) { "" }
+        val obj = try { json.parseToJsonElement(text).jsonObject } catch (_: Exception) { null }
+        val message = try {
+            obj?.get("message")?.jsonPrimitive?.content
+        } catch (_: Exception) { null } ?: status.description
+        val fieldErrors: Map<String, List<String>> = obj?.get("errors")
+            ?.let { it as? JsonObject }
+            ?.mapValues { (_, v) ->
+                (v as? JsonArray)?.map { it.jsonPrimitive.content } ?: emptyList()
+            } ?: emptyMap()
+        throw when (code) {
+            422  -> ApiException.Validation(message, fieldErrors)
+            401, 403 -> ApiException.Auth(message)
+            404  -> ApiException.NotFound(message)
+            in 500..599 -> ApiException.Server(message, code)
+            else -> ApiException.Server(message, code)
+        }
+    }
+
+    // ── HTTP helpers ──────────────────────────────────────────────────────
+
     private suspend inline fun <reified T> getList(slug: String, path: String, params: Map<String, Any?> = emptyMap()): List<T> {
-        val rawJson: JsonObject = client.get(url(slug, path)) {
+        val response = client.get(url(slug, path)) {
             params.forEach { (k, v) -> if (v != null) parameter(k, v) }
-        }.body()
+        }
+        response.checkError()
+        val rawJson: JsonObject = response.body()
         return tryUnwrapList(rawJson)
     }
 
     private suspend inline fun <reified T> getPaginated(slug: String, path: String, params: Map<String, Any?> = emptyMap()): PaginatedResponse<T> {
-        val rawJson: JsonObject = client.get(url(slug, path)) {
+        val response = client.get(url(slug, path)) {
             params.forEach { (k, v) -> if (v != null) parameter(k, v) }
-        }.body()
+        }
+        response.checkError()
+        val rawJson: JsonObject = response.body()
         val dataEl = rawJson["data"]
         return if (dataEl != null) {
             json.decodeFromJsonElement(rawJson)
@@ -85,28 +121,34 @@ class OperixApiService(
     }
 
     private suspend inline fun <reified T> getSingle(slug: String, path: String): T {
-        val rawJson: JsonObject = client.get(url(slug, path)).body()
+        val response = client.get(url(slug, path))
+        response.checkError()
+        val rawJson: JsonObject = response.body()
         return tryUnwrap(rawJson)
     }
 
     private suspend inline fun <reified T> postSingle(slug: String, path: String, body: Any? = null): T {
-        val rawJson: JsonObject = client.post(url(slug, path)) {
+        val response = client.post(url(slug, path)) {
             contentType(ContentType.Application.Json)
             if (body != null) setBody(body)
-        }.body()
+        }
+        response.checkError()
+        val rawJson: JsonObject = response.body()
         return tryUnwrap(rawJson)
     }
 
     private suspend inline fun <reified T> putSingle(slug: String, path: String, body: Any): T {
-        val rawJson: JsonObject = client.put(url(slug, path)) {
+        val response = client.put(url(slug, path)) {
             contentType(ContentType.Application.Json)
             setBody(body)
-        }.body()
+        }
+        response.checkError()
+        val rawJson: JsonObject = response.body()
         return tryUnwrap(rawJson)
     }
 
     private suspend fun deleteResource(slug: String, path: String) {
-        client.delete(url(slug, path))
+        client.delete(url(slug, path)).checkError()
     }
 
     private inline fun <reified T> tryUnwrap(obj: JsonObject): T {
