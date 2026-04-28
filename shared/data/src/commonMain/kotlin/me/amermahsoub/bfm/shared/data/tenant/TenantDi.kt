@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import me.amermahsoub.bfm.shared.data.api.OperixApiService
 import me.amermahsoub.bfm.shared.data.db.BfmDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -13,6 +14,7 @@ fun tenantBootstrapModule(baseUrl: String = defaultTenantBaseUrl()): Module = mo
         Json {
             ignoreUnknownKeys = true
             explicitNulls = false
+            isLenient = true
         }
     }
     single { TenantContext() }
@@ -36,6 +38,8 @@ fun tenantBootstrapModule(baseUrl: String = defaultTenantBaseUrl()): Module = mo
     single { TenantApiService(get(), get(), get()) }
     single { TenantRepository(get(), get(), get(), get(), get()) }
     single { ConfigStore(get(), get()) }
+    // Full Operix API service covering all 60+ endpoints
+    single { OperixApiService(get(), get(), get()) }
     includes(platformTenantModule())
 }
 

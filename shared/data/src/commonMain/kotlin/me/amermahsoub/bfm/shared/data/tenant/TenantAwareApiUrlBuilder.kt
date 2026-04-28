@@ -6,6 +6,8 @@ class TenantAwareApiUrlBuilder(
 ) {
     private val normalizedBaseUrl = normalizeTenantBaseUrl(baseUrl).removeSuffix("/")
 
+    val base: String get() = normalizedBaseUrl
+
     private fun activeSlug(): String = tenantContext.tenantSlug.value ?: error("Tenant slug is not selected")
 
     fun publicTenantConfig(slug: String): String = "$normalizedBaseUrl/api/v1/tenant-config/$slug"

@@ -1,551 +1,333 @@
 package me.amermahsoub.bfm
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import me.amermahsoub.bfm.shared.data.tenant.ConfigStore
-import me.amermahsoub.bfm.shared.data.tenant.SessionBootstrap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.savedstate.read
+import me.amermahsoub.bfm.navigation.NavRoutes
 import me.amermahsoub.bfm.shared.data.tenant.SessionStore
-import me.amermahsoub.bfm.shared.data.tenant.TenantContext
-import me.amermahsoub.bfm.shared.data.tenant.TenantRepository
-import me.amermahsoub.bfm.shared.data.tenant.isValidTenantSlug
-import org.koin.core.context.GlobalContext
-
-private enum class AppScreen { LOGIN, HOME }
-
-private enum class HomeTab(
-    val title: String,
-    val requiredPermissions: Set<String>,
-) {
-    DASHBOARD("Dashboard", setOf("dashboard.view")),
-    POS("POS", setOf("pos.view", "pos.create")),
-    INVOICES("Invoices", setOf("sales.view", "sales.create", "purchases.view", "clients.view", "suppliers.view")),
-    PRODUCTS("Products", setOf("products.view", "inventory.view")),
-    MORE("More", emptySet()),
-}
-
-private data class StatCard(
-    val label: String,
-    val value: String,
-    val tone: CardTone = CardTone.DEFAULT,
-)
-
-private data class ActionButton(
-    val title: String,
-    val note: String,
-)
-
-private data class FeedItem(
-    val title: String,
-    val subtitle: String,
-    val trailing: String,
-    val badge: String? = null,
-)
-
-private enum class CardTone { DEFAULT, PRIMARY, DANGER, SOFT }
+import me.amermahsoub.bfm.ui.components.Divider
+import me.amermahsoub.bfm.ui.components.ListItem
+import me.amermahsoub.bfm.ui.components.SectionHeader
+import me.amermahsoub.bfm.ui.screens.accounts.AccountsScreen
+import me.amermahsoub.bfm.ui.screens.auth.LoginScreen
+import me.amermahsoub.bfm.ui.screens.clients.ClientDetailScreen
+import me.amermahsoub.bfm.ui.screens.clients.ClientFormScreen
+import me.amermahsoub.bfm.ui.screens.clients.ClientListScreen
+import me.amermahsoub.bfm.ui.screens.dashboard.DashboardScreen
+import me.amermahsoub.bfm.ui.screens.expenses.ExpenseFormScreen
+import me.amermahsoub.bfm.ui.screens.expenses.ExpenseListScreen
+import me.amermahsoub.bfm.ui.screens.inventory.InventoryScreen
+import me.amermahsoub.bfm.ui.screens.invoices.purchases.PurchaseInvoiceDetailScreen
+import me.amermahsoub.bfm.ui.screens.invoices.purchases.PurchaseInvoiceFormScreen
+import me.amermahsoub.bfm.ui.screens.invoices.purchases.PurchaseInvoiceListScreen
+import me.amermahsoub.bfm.ui.screens.invoices.sales.SalesInvoiceDetailScreen
+import me.amermahsoub.bfm.ui.screens.invoices.sales.SalesInvoiceFormScreen
+import me.amermahsoub.bfm.ui.screens.invoices.sales.SalesInvoiceListScreen
+import me.amermahsoub.bfm.ui.screens.pos.PosReceiptScreen
+import me.amermahsoub.bfm.ui.screens.pos.PosScreen
+import me.amermahsoub.bfm.ui.screens.pos.PosTerminalScreen
+import me.amermahsoub.bfm.ui.screens.pos.ShiftSummaryScreen
+import me.amermahsoub.bfm.ui.screens.products.ProductDetailScreen
+import me.amermahsoub.bfm.ui.screens.products.ProductFormScreen
+import me.amermahsoub.bfm.ui.screens.products.ProductListScreen
+import me.amermahsoub.bfm.ui.screens.reports.AccountStatementScreen
+import me.amermahsoub.bfm.ui.screens.reports.ProfitLossScreen
+import me.amermahsoub.bfm.ui.screens.reports.ReportsScreen
+import me.amermahsoub.bfm.ui.screens.reports.TrialBalanceScreen
+import me.amermahsoub.bfm.ui.screens.settings.SettingsScreen
+import me.amermahsoub.bfm.ui.screens.suppliers.SupplierDetailScreen
+import me.amermahsoub.bfm.ui.screens.suppliers.SupplierFormScreen
+import me.amermahsoub.bfm.ui.screens.suppliers.SupplierListScreen
+import me.amermahsoub.bfm.ui.theme.OperixTheme
+import org.koin.compose.koinInject
 
 @Composable
 fun App() {
-    val koin = GlobalContext.get()
-    val tenantRepository = remember { koin.get<TenantRepository>() }
-    val tenantContext = remember { koin.get<TenantContext>() }
-    val configStore = remember { koin.get<ConfigStore>() }
-    val sessionStore = remember { koin.get<SessionStore>() }
+    OperixTheme {
+        val sessionStore: SessionStore = koinInject()
+        val session by sessionStore.session.collectAsState()
 
-    val selectedSlug by tenantRepository.getSelectedTenantSlug().collectAsState(initial = null)
-    val tenantConfig by configStore.config.collectAsState()
-    val session by sessionStore.session.collectAsState()
+        val navController = rememberNavController()
+        val startDestination = if (session != null) NavRoutes.Dashboard.route else NavRoutes.Login.route
 
-    val scope = rememberCoroutineScope()
-    val snackbar = remember { SnackbarHostState() }
-    var screen by remember(session) { mutableStateOf(if (session != null) AppScreen.HOME else AppScreen.LOGIN) }
+        NavHost(navController = navController, startDestination = startDestination) {
 
-    LaunchedEffect(selectedSlug) {
-        tenantContext.setTenantSlug(selectedSlug)
+            // ── Auth ───────────────────────────────────────────────────────
+            composable(NavRoutes.Login.route) {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(NavRoutes.Dashboard.route) {
+                            popUpTo(NavRoutes.Login.route) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            // ── Main shell (bottom nav) ────────────────────────────────────
+            composable(NavRoutes.Dashboard.route) {
+                MainShell(rootNav = navController)
+            }
+
+            // ── POS full-screen flows ──────────────────────────────────────
+            composable(NavRoutes.PosActiveShift.route) {
+                PosScreen(
+                    shiftId = -1,
+                    onOrderCompleted = { orderId -> navController.navigate(NavRoutes.PosReceipt.build(orderId)) },
+                    onCloseShift = { navController.popBackStack().let {} },
+                )
+            }
+            composable(NavRoutes.PosReceipt.route) { backStack ->
+                val orderId = backStack.arguments?.read { getStringOrNull("orderId") }?.toIntOrNull() ?: return@composable
+                PosReceiptScreen(
+                    orderId = orderId,
+                    onNewSale = {
+                        navController.navigate(NavRoutes.PosActiveShift.route) {
+                            popUpTo(NavRoutes.PosActiveShift.route) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(NavRoutes.ShiftSummary.route) { backStack ->
+                val shiftId = backStack.arguments?.read { getStringOrNull("shiftId") }?.toIntOrNull() ?: return@composable
+                ShiftSummaryScreen(
+                    shiftId = shiftId,
+                    onShiftClosed = { navController.popBackStack().let {} },
+                    onBack = { navController.popBackStack().let {} },
+                )
+            }
+
+            // ── Products ───────────────────────────────────────────────────
+            composable(NavRoutes.ProductList.route) {
+                ProductListScreen(
+                    onNavigateToDetail = { navController.navigate(NavRoutes.ProductDetail.build(it)) },
+                    onNavigateToCreate = { navController.navigate(NavRoutes.ProductCreate.route) },
+                )
+            }
+            composable(NavRoutes.ProductDetail.route) { backStack ->
+                val id = backStack.arguments?.read { getStringOrNull("productId") }?.toIntOrNull() ?: return@composable
+                ProductDetailScreen(productId = id, onNavigateToEdit = { navController.navigate(NavRoutes.ProductEdit.build(it)) }, onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.ProductCreate.route) {
+                ProductFormScreen(productId = null, onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.ProductEdit.route) { backStack ->
+                val id = backStack.arguments?.read { getStringOrNull("productId") }?.toIntOrNull() ?: return@composable
+                ProductFormScreen(productId = id, onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Sales Invoices ─────────────────────────────────────────────
+            composable(NavRoutes.SalesInvoiceList.route) {
+                SalesInvoiceListScreen(
+                    onNavigateToDetail = { navController.navigate(NavRoutes.SalesInvoiceDetail.build(it)) },
+                    onNavigateToCreate = { navController.navigate(NavRoutes.SalesInvoiceCreate.route) },
+                )
+            }
+            composable(NavRoutes.SalesInvoiceDetail.route) { backStack ->
+                val id = backStack.arguments?.read { getStringOrNull("invoiceId") }?.toIntOrNull() ?: return@composable
+                SalesInvoiceDetailScreen(invoiceId = id, onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.SalesInvoiceCreate.route) {
+                SalesInvoiceFormScreen(onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Purchase Invoices ──────────────────────────────────────────
+            composable(NavRoutes.PurchaseInvoiceList.route) {
+                PurchaseInvoiceListScreen(
+                    onNavigateToDetail = { navController.navigate(NavRoutes.PurchaseInvoiceDetail.build(it)) },
+                    onNavigateToCreate = { navController.navigate(NavRoutes.PurchaseInvoiceCreate.route) },
+                )
+            }
+            composable(NavRoutes.PurchaseInvoiceDetail.route) { backStack ->
+                val id = backStack.arguments?.read { getStringOrNull("invoiceId") }?.toIntOrNull() ?: return@composable
+                PurchaseInvoiceDetailScreen(invoiceId = id, onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.PurchaseInvoiceCreate.route) {
+                PurchaseInvoiceFormScreen(onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Clients ────────────────────────────────────────────────────
+            composable(NavRoutes.ClientList.route) {
+                ClientListScreen(
+                    onNavigateToDetail = { navController.navigate(NavRoutes.ClientDetail.build(it)) },
+                    onNavigateToCreate = { navController.navigate(NavRoutes.ClientCreate.route) },
+                )
+            }
+            composable(NavRoutes.ClientDetail.route) { backStack ->
+                val id = backStack.arguments?.read { getStringOrNull("clientId") }?.toIntOrNull() ?: return@composable
+                ClientDetailScreen(clientId = id, onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.ClientCreate.route) {
+                ClientFormScreen(clientId = null, onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Suppliers ──────────────────────────────────────────────────
+            composable(NavRoutes.SupplierList.route) {
+                SupplierListScreen(
+                    onNavigateToDetail = { navController.navigate(NavRoutes.SupplierDetail.build(it)) },
+                    onNavigateToCreate = { navController.navigate(NavRoutes.SupplierCreate.route) },
+                )
+            }
+            composable(NavRoutes.SupplierDetail.route) { backStack ->
+                val id = backStack.arguments?.read { getStringOrNull("supplierId") }?.toIntOrNull() ?: return@composable
+                SupplierDetailScreen(supplierId = id, onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.SupplierCreate.route) {
+                SupplierFormScreen(supplierId = null, onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Inventory ──────────────────────────────────────────────────
+            composable(NavRoutes.InventoryList.route) {
+                InventoryScreen(onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Expenses ───────────────────────────────────────────────────
+            composable(NavRoutes.ExpenseList.route) {
+                ExpenseListScreen(onNavigateToCreate = { navController.navigate(NavRoutes.ExpenseCreate.route) })
+            }
+            composable(NavRoutes.ExpenseCreate.route) {
+                ExpenseFormScreen(onSaved = { navController.popBackStack().let {} }, onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Reports ────────────────────────────────────────────────────
+            composable(NavRoutes.Reports.route) {
+                ReportsScreen(onNavigate = { navController.navigate(it) })
+            }
+            composable(NavRoutes.ProfitLoss.route) {
+                ProfitLossScreen(onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.TrialBalance.route) {
+                TrialBalanceScreen(onBack = { navController.popBackStack().let {} })
+            }
+            composable(NavRoutes.AccountStatement.route) {
+                AccountStatementScreen(onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Accounts & GL ──────────────────────────────────────────────
+            composable(NavRoutes.Accounts.route) {
+                AccountsScreen(onBack = { navController.popBackStack().let {} })
+            }
+
+            // ── Settings ───────────────────────────────────────────────────
+            composable(NavRoutes.Settings.route) {
+                SettingsScreen(
+                    onNavigate = { navController.navigate(it) },
+                    onLogout = {
+                        navController.navigate(NavRoutes.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                )
+            }
+        }
     }
+}
 
-    MaterialTheme {
-        Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
-            Column(
-                modifier = Modifier
-                    .padding(padding)
-                    .safeContentPadding()
-                    .fillMaxSize()
-                    .padding(16.dp),
-            ) {
-                when (screen) {
-                    AppScreen.LOGIN -> LoginScreen(
-                        tenantName = tenantConfig?.name,
-                        initialTenantSlug = selectedSlug,
-                        onLogin = { slug, username, password ->
-                            scope.launch {
-                                if (!isValidTenantSlug(slug)) {
-                                    snackbar.showSnackbar("Invalid company code / tenant slug.")
-                                    return@launch
-                                }
+// ── Bottom-nav main shell ──────────────────────────────────────────────────
 
-                                val previousSlug = selectedSlug
-                                try {
-                                    tenantRepository.refreshConfig(slug)
-                                    tenantRepository.selectTenant(slug)
-                                    if (!previousSlug.isNullOrBlank() && previousSlug != slug) {
-                                        tenantRepository.clearTenantData(previousSlug)
-                                    }
-                                } catch (e: Throwable) {
-                                    val cached = tenantRepository.getCachedConfigOnce(slug)
-                                    if (cached != null) {
-                                        tenantRepository.selectTenant(slug)
-                                        snackbar.showSnackbar("Offline mode: using cached tenant config for '$slug'.")
-                                    } else {
-                                        snackbar.showSnackbar(e.message ?: "Unable to fetch tenant configuration.")
-                                        return@launch
-                                    }
-                                }
+private data class BottomTab(val label: String, val icon: ImageVector, val route: String)
 
-                                try {
-                                    tenantRepository.loginAndBootstrapSession(slug, username, password)
-                                    screen = AppScreen.HOME
-                                    snackbar.showSnackbar("Session loaded for $slug.")
-                                } catch (e: Throwable) {
-                                    snackbar.showSnackbar(e.message ?: "Login failed")
-                                }
+private val bottomTabs = listOf(
+    BottomTab("Dashboard", Icons.Filled.Dashboard, NavRoutes.Dashboard.route),
+    BottomTab("POS", Icons.Filled.PointOfSale, NavRoutes.PosTerminals.route),
+    BottomTab("Invoices", Icons.Filled.Description, NavRoutes.SalesInvoiceList.route),
+    BottomTab("Products", Icons.Filled.Inventory, NavRoutes.ProductList.route),
+    BottomTab("More", Icons.Filled.Menu, NavRoutes.More.route),
+)
+
+@Composable
+private fun MainShell(rootNav: NavHostController) {
+    val innerNav = rememberNavController()
+    val backStackEntry by innerNav.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                bottomTabs.forEach { tab ->
+                    NavigationBarItem(
+                        selected = currentRoute == tab.route,
+                        onClick = {
+                            innerNav.navigate(tab.route) {
+                                popUpTo(innerNav.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
-                    )
-
-                    AppScreen.HOME -> HomeScreen(
-                        tenantName = tenantConfig?.name ?: session?.login?.tenant?.name ?: "Operix",
-                        tenantSlug = selectedSlug.orEmpty(),
-                        session = session,
-                        onLogout = {
-                            scope.launch {
-                                tenantRepository.logout()
-                                screen = AppScreen.LOGIN
-                            }
-                        },
+                        icon = { Icon(tab.icon, contentDescription = tab.label) },
+                        label = { Text(tab.label) },
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun LoginScreen(
-    tenantName: String?,
-    initialTenantSlug: String?,
-    onLogin: (String, String, String) -> Unit,
-) {
-    var tenantSlug by remember(initialTenantSlug) { mutableStateOf(initialTenantSlug.orEmpty()) }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Operix", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                Text("The Financial Architect", style = MaterialTheme.typography.titleMedium)
-                Text("Tenant: ${tenantName ?: "Operix"}")
-                Text("Sign in with company code, identity, and security key.")
-            }
-        }
-
-        Card {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Access Portal", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("This screen now follows the provided mockups: no separate tenant setup step.")
-                OutlinedTextField(
-                    value = tenantSlug,
-                    onValueChange = { tenantSlug = it.trim().lowercase() },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Company Code") },
-                    placeholder = { Text("e.g. global-corp") },
-                )
-                OutlinedTextField(
-                    username,
-                    { username = it },
-                    label = { Text("Identity") },
-                    placeholder = { Text("Email or phone number") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    password,
-                    { password = it },
-                    label = { Text("Security Key") },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
-                )
-                Button(onClick = { onLogin(tenantSlug, username, password) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Access Portal")
+        },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            NavHost(innerNav, startDestination = NavRoutes.Dashboard.route) {
+                composable(NavRoutes.Dashboard.route) { DashboardScreen() }
+                composable(NavRoutes.PosTerminals.route) {
+                    PosTerminalScreen(
+                        onShiftOpened = { _ -> rootNav.navigate(NavRoutes.PosActiveShift.route) },
+                        onBack = {},
+                    )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeScreen(
-    tenantName: String,
-    tenantSlug: String,
-    session: SessionBootstrap?,
-    onLogout: () -> Unit,
-) {
-    val tabs = remember(session?.permissions) { availableTabsFor(session) }
-    var selectedTab by rememberSaveable(tabs) { mutableStateOf(tabs.first()) }
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        HomeTopBar(tenantName = tenantName, tenantSlug = tenantSlug, session = session)
-
-        Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            when (selectedTab) {
-                HomeTab.DASHBOARD -> DashboardScreen()
-                HomeTab.POS -> PosScreen(session)
-                HomeTab.INVOICES -> InvoicesScreen(session)
-                HomeTab.PRODUCTS -> ProductsScreen(session)
-                HomeTab.MORE -> MoreScreen(session, onLogout)
-            }
-        }
-
-        BottomTabBar(tabs = tabs, selectedTab = selectedTab, onSelected = { selectedTab = it })
-    }
-}
-
-@Composable
-private fun HomeTopBar(
-    tenantName: String,
-    tenantSlug: String,
-    session: SessionBootstrap?,
-) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(tenantName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Tenant: $tenantSlug")
-                Text("${session?.me?.name ?: "User"} • ${session?.me?.role ?: "Active session"}")
-            }
-            Text("🔔", style = MaterialTheme.typography.headlineMedium)
-        }
-    }
-}
-
-@Composable
-private fun DashboardScreen() {
-    val quickActions = listOf(
-        ActionButton("New Sale", "Start POS checkout quickly."),
-        ActionButton("Record Payment", "Capture invoice or client payment."),
-        ActionButton("Add Expense", "Log mobile expense with account context."),
-    )
-    val products = listOf(
-        FeedItem("Apple iPhone 15 Pro", "14 sold • Electronics", "$13,986.00"),
-        FeedItem("Samsung Galaxy S24", "9 sold • Electronics", "$8,091.00"),
-    )
-    val timeline = listOf(
-        FeedItem("Payment received from Sarah Jenkins", "24 minutes ago • Invoices", "Invoice #INV-2024-082 • $450.00"),
-        FeedItem("New sale recorded by Mike R.", "1 hour ago • POS", "$124.50"),
-        FeedItem("Stock updated: MacBook Air M3", "3 hours ago • Inventory", "5 low stock items"),
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        StatsRow(
-            StatCard("Today's Sales total", "$1,450.00", CardTone.PRIMARY),
-            StatCard("Due invoices count", "8", CardTone.SOFT),
-        )
-        StatBanner("Critical", "5 Low stock items require immediate attention.", CardTone.DANGER)
-        Section("Quick actions") {
-            quickActions.forEach { action -> PrimaryActionCard(action, fullWidth = true) }
-        }
-        Section("Top selling products") {
-            products.forEach { item -> FeedCard(item) }
-        }
-        Section("Recent activity") {
-            timeline.forEach { item -> FeedCard(item) }
-        }
-    }
-}
-
-@Composable
-private fun PosScreen(session: SessionBootstrap?) {
-    val cart = listOf(
-        FeedItem("Foundation / Blue", "Qty 1", "$25.00"),
-        FeedItem("Accent / Silver", "Qty 1", "$15.00"),
-        FeedItem("Apple Cream", "Qty 1", "$5.00"),
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SearchCard("Search products or scan barcode")
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Active Cart", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("${cart.size} items")
-        }
-        cart.forEach { item -> FeedCard(item) }
-        Card(colors = toneColors(CardTone.SOFT)) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Payment Method", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Cash", "Card", "Transfer").forEach { method ->
-                        Button(onClick = {}, modifier = Modifier.width(110.dp)) { Text(method) }
-                    }
+                composable(NavRoutes.SalesInvoiceList.route) {
+                    SalesInvoiceListScreen(
+                        onNavigateToDetail = { rootNav.navigate(NavRoutes.SalesInvoiceDetail.build(it)) },
+                        onNavigateToCreate = { rootNav.navigate(NavRoutes.SalesInvoiceCreate.route) },
+                    )
                 }
-                Text("Drawer account: ${session?.me?.drawerAccount?.name ?: "Not assigned"}")
-                Text("Total Amount", style = MaterialTheme.typography.titleMedium)
-                Text("$45.00", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Complete Sale") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun InvoicesScreen(session: SessionBootstrap?) {
-    val invoices = listOf(
-        FeedItem("Sarah Jenkins", "#INV-2024-082 • Sent Aug 24, 2024", "$450.00", "PAID"),
-        FeedItem("Mike R.", "#INV-2024-083 • Sent Aug 22, 2024", "$125.00", "DUE"),
-        FeedItem("Aura Minimalist", "#INV-2024-084 • 5 days overdue", "$980.00", "OVERDUE"),
-    )
-    val focusActions = listOf(
-        ActionButton("Sales invoices", "Create, post, print, and record payment on sales invoices."),
-        ActionButton("Purchase invoices", "Handle supplier purchases, returns, and payment posting."),
-        ActionButton("Clients & Suppliers", "Review balances, collections, and payable follow-up."),
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Invoices", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        SearchCard("Search by invoice # or client")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("All", "Unpaid", "Paid", "Drafts").forEach { filter ->
-                Button(onClick = {}) { Text(filter) }
-            }
-        }
-        StatsRow(
-            StatCard("Total Receivables", "$1,555.00", CardTone.PRIMARY),
-            StatCard("Overdue", "$980.00", CardTone.DANGER),
-        )
-        Section("Recent Activity") {
-            invoices.forEach { item -> FeedCard(item) }
-        }
-        Section("Start with these flows") {
-            focusActions.forEach { action -> PrimaryActionCard(action, fullWidth = true) }
-        }
-        Text("Permissions loaded: ${session?.permissions?.size ?: 0}")
-    }
-}
-
-@Composable
-private fun ProductsScreen(session: SessionBootstrap?) {
-    val products = listOf(
-        FeedItem("QuantumBeat Pro", "84 in stock", "$299.00"),
-        FeedItem("Aura Minimalist Watch", "3 remaining", "$185.50", "LOW"),
-        FeedItem("Nexus Controller G5", "12 in stock", "$79.99"),
-        FeedItem("Voyager Leather Bag", "24 in stock", "$340.00"),
-        FeedItem("Dash Sneakers Neon", "Out of stock", "$120.00", "OUT"),
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Products", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        SearchCard("Search products, SKUs, barcodes")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("All Items", "Low Stock", "Electronics").forEach { filter ->
-                Button(onClick = {}) { Text(filter) }
-            }
-        }
-        products.forEach { item -> FeedCard(item) }
-        PrimaryActionCard(
-            ActionButton(
-                "View Transactions",
-                "Open product detail, barcode, pricing, reorder point, and movement history.",
-            ),
-            fullWidth = true,
-        )
-        Text("Inventory permission: ${hasPermission(session, "inventory.view")}")
-    }
-}
-
-@Composable
-private fun MoreScreen(
-    session: SessionBootstrap?,
-    onLogout: () -> Unit,
-) {
-    val recent = listOf(
-        FeedItem("Sale #8492", "02:14 PM", "$124.50"),
-        FeedItem("Cash Drop", "11:05 AM", "-$200.00"),
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Shift Management", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        StatsRow(
-            StatCard("Shift Status", "OPEN", CardTone.SOFT),
-            StatCard("Live", "08:30 AM", CardTone.DEFAULT),
-        )
-        StatsRow(
-            StatCard("Total Sales", "$1,450.00", CardTone.DEFAULT),
-            StatCard("Total Orders", "42", CardTone.DEFAULT),
-        )
-        Section("Recent Activity") { recent.forEach { item -> FeedCard(item) } }
-        Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Close Shift") }
-        Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Print Shift Report") }
-        Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("Logout") }
-        Text("Reports access: ${hasPermission(session, "reports.view")}")
-    }
-}
-
-@Composable
-private fun BottomTabBar(
-    tabs: List<HomeTab>,
-    selectedTab: HomeTab,
-    onSelected: (HomeTab) -> Unit,
-) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            tabs.forEach { tab ->
-                Button(onClick = { onSelected(tab) }) {
-                    Text(if (tab == selectedTab) "• ${tab.title}" else tab.title)
+                composable(NavRoutes.ProductList.route) {
+                    ProductListScreen(
+                        onNavigateToDetail = { rootNav.navigate(NavRoutes.ProductDetail.build(it)) },
+                        onNavigateToCreate = { rootNav.navigate(NavRoutes.ProductCreate.route) },
+                    )
                 }
+                composable(NavRoutes.More.route) { MoreScreen(onNavigate = { rootNav.navigate(it) }) }
             }
         }
     }
 }
 
 @Composable
-private fun SearchCard(placeholder: String) {
-    Card(colors = toneColors(CardTone.SOFT)) {
-        Text(
-            placeholder,
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
-            style = MaterialTheme.typography.titleMedium,
-        )
-    }
-}
-
-@Composable
-private fun StatsRow(first: StatCard, second: StatCard) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        StatCardView(first)
-        StatCardView(second)
-    }
-}
-
-@Composable
-private fun StatCardView(card: StatCard) {
-    Card(colors = toneColors(card.tone)) {
-        Column(modifier = Modifier.width(160.dp).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(card.label, style = MaterialTheme.typography.titleMedium)
-            Text(card.value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+private fun MoreScreen(onNavigate: (String) -> Unit) {
+    val menuItems = listOf(
+        "Clients" to NavRoutes.ClientList.route,
+        "Suppliers" to NavRoutes.SupplierList.route,
+        "Purchase Invoices" to NavRoutes.PurchaseInvoiceList.route,
+        "Inventory" to NavRoutes.InventoryList.route,
+        "Expenses" to NavRoutes.ExpenseList.route,
+        "Reports" to NavRoutes.Reports.route,
+        "Accounts & GL" to NavRoutes.Accounts.route,
+        "Settings" to NavRoutes.Settings.route,
+    )
+    LazyColumn(Modifier.fillMaxSize()) {
+        item { SectionHeader("More") }
+        items(menuItems) { (label, route) ->
+            ListItem(title = label, onClick = { onNavigate(route) })
+            Divider()
         }
     }
 }
-
-@Composable
-private fun StatBanner(title: String, message: String, tone: CardTone) {
-    Card(colors = toneColors(tone)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, fontWeight = FontWeight.Bold)
-            Text(message)
-        }
-    }
-}
-
-@Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        content()
-    }
-}
-
-@Composable
-private fun PrimaryActionCard(action: ActionButton, fullWidth: Boolean = false) {
-    Card(colors = toneColors(CardTone.PRIMARY)) {
-        Column(
-            modifier = Modifier
-                .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(action.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(action.note)
-        }
-    }
-}
-
-@Composable
-private fun FeedCard(item: FeedItem) {
-    Card(colors = toneColors(CardTone.DEFAULT)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(item.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(item.subtitle)
-                if (item.badge != null) Text(item.badge, color = MaterialTheme.colorScheme.primary)
-            }
-            Text(item.trailing, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun toneColors(tone: CardTone) = when (tone) {
-    CardTone.DEFAULT -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    CardTone.PRIMARY -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    CardTone.DANGER -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-    CardTone.SOFT -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-}
-
-private fun availableTabsFor(session: SessionBootstrap?): List<HomeTab> {
-    val permissions = session?.permissions.orEmpty().toSet()
-    val tabs = HomeTab.entries.filter { tab ->
-        tab.requiredPermissions.isEmpty() || tab.requiredPermissions.any { it in permissions }
-    }
-    return if (tabs.isEmpty()) listOf(HomeTab.MORE) else tabs
-}
-
-private fun hasPermission(session: SessionBootstrap?, permission: String): Boolean =
-    permission in session?.permissions.orEmpty()
