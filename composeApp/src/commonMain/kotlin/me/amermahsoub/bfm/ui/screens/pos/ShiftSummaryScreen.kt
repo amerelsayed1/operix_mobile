@@ -84,7 +84,7 @@ fun ShiftSummaryScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(shiftId) {
-        summaryViewModel.loadSummary(shiftId)
+        summaryViewModel.loadSummary()
     }
 
     Scaffold(
@@ -97,7 +97,7 @@ fun ShiftSummaryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { summaryViewModel.loadSummary(shiftId) }) {
+                    IconButton(onClick = { summaryViewModel.loadSummary() }) {
                         Icon(FeatherIcons.RefreshCw, contentDescription = "Refresh", modifier = Modifier.size(18.dp))
                     }
                 },
@@ -108,7 +108,7 @@ fun ShiftSummaryScreen(
     ) { paddingValues ->
         when (val state = summaryState) {
             is Result.Loading -> LoadingScreen("Loading shift summary…")
-            is Result.Error -> ErrorView(state.message, onRetry = { summaryViewModel.loadSummary(shiftId) })
+            is Result.Error -> ErrorView(state.message, onRetry = { summaryViewModel.loadSummary() })
             is Result.Success -> {
                 val summary = state.data
                 val shift = summary.shift
@@ -161,7 +161,7 @@ fun ShiftSummaryScreen(
             onConfirm = { closingCash, notes ->
                 showCloseDialog = false
                 scope.launch {
-                    posViewModel.closeShift(shiftId, closingCash, notes)
+                    posViewModel.closeShift(closingCash, notes)
                     onShiftClosed()
                 }
             },

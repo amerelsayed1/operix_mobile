@@ -48,9 +48,9 @@ class PosViewModel(
     private val _currentShift = MutableStateFlow<Shift?>(null)
     val currentShift: StateFlow<Shift?> = _currentShift.asStateFlow()
 
-    fun loadCurrentShift(terminalId: Int) {
+    fun loadCurrentShift() {
         launch {
-            _currentShift.value = api.getCurrentShift(slug, terminalId)
+            _currentShift.value = api.getCurrentShift(slug)
         }
     }
 
@@ -61,9 +61,9 @@ class PosViewModel(
         }
     }
 
-    fun closeShift(shiftId: Int, closingCash: Double, notes: String?) {
+    fun closeShift(closingCash: Double, notes: String?) {
         launch {
-            val shift = api.closeShift(slug, shiftId, CloseShiftRequest(closingCash, notes))
+            val shift = api.closeShift(slug, CloseShiftRequest(closingCash, notes))
             _currentShift.value = shift
         }
     }

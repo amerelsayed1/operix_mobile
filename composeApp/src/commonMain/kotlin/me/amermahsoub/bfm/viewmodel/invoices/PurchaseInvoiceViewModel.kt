@@ -117,14 +117,14 @@ class PurchaseInvoiceViewModel(
     ): Result<PurchaseInvoice> =
         runCatching {
             api.recordSupplierPayment(
-                slug,
-                RecordPaymentRequest(
+                slug = slug,
+                invoiceId = invoiceId,
+                request = RecordPaymentRequest(
                     amount = amount,
                     paymentMethodId = paymentMethodId,
                     paymentDate = paymentDate,
                     notes = notes,
                 ),
-                invoiceId,
             )
         }.fold(
             onSuccess = { Result.Success(it) },

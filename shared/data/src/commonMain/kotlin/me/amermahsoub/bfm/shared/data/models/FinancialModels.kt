@@ -187,3 +187,200 @@ data class ClientStatementEntry(
     @SerialName("paid_amount") val paidAmount: String = "0.00",
     val balance: String,
 )
+
+// ── Account operations ────────────────────────────────────────────────────
+
+@Serializable
+data class AccountHistoryEntry(
+    val id: Int,
+    val date: String,
+    val type: String,
+    val direction: String,
+    val amount: String,
+    @SerialName("balance_after") val balanceAfter: String,
+    val description: String? = null,
+    @SerialName("reference_id") val referenceId: Int? = null,
+    @SerialName("reference_type") val referenceType: String? = null,
+)
+
+@Serializable
+data class AccountHistoryResponse(
+    val account: Account,
+    val transactions: List<AccountHistoryEntry> = emptyList(),
+)
+
+@Serializable
+data class DepositRequest(
+    @SerialName("account_id") val accountId: Int,
+    val amount: Double,
+    val description: String,
+    val date: String,
+)
+
+@Serializable
+data class WithdrawRequest(
+    @SerialName("account_id") val accountId: Int,
+    val amount: Double,
+    val description: String,
+    val date: String,
+)
+
+@Serializable
+data class AccountTransferRequest(
+    @SerialName("from_account_id") val fromAccountId: Int,
+    @SerialName("to_account_id") val toAccountId: Int,
+    val amount: Double,
+    val description: String,
+    val date: String,
+)
+
+@Serializable
+data class AccountTransferResult(
+    @SerialName("from_account") val fromAccount: Account,
+    @SerialName("to_account") val toAccount: Account,
+)
+
+// ── POS Cash movements ────────────────────────────────────────────────────
+
+@Serializable
+data class CashMovement(
+    val id: Int,
+    @SerialName("shift_id") val shiftId: Int,
+    val type: String,
+    val amount: String,
+    val notes: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+@Serializable
+data class RecordCashMovementRequest(
+    val type: String,
+    val amount: Double,
+    val notes: String? = null,
+)
+
+// ── POS Receipt ───────────────────────────────────────────────────────────
+
+@Serializable
+data class ReceiptItem(
+    val name: String,
+    val qty: String,
+    val price: String,
+    val total: String,
+)
+
+@Serializable
+data class ReceiptData(
+    @SerialName("receipt_number") val receiptNumber: String,
+    val date: String,
+    val time: String? = null,
+    val cashier: String? = null,
+    val terminal: String? = null,
+    @SerialName("business_name") val businessName: String? = null,
+    @SerialName("business_logo") val businessLogo: String? = null,
+    @SerialName("business_address") val businessAddress: String? = null,
+    @SerialName("business_phone") val businessPhone: String? = null,
+    val items: List<ReceiptItem> = emptyList(),
+    val subtotal: String,
+    @SerialName("tax_label") val taxLabel: String? = null,
+    @SerialName("tax_total") val taxTotal: String,
+    @SerialName("grand_total") val grandTotal: String,
+    @SerialName("paid_amount") val paidAmount: String,
+    @SerialName("change_amount") val changeAmount: String,
+    @SerialName("payment_method") val paymentMethod: String? = null,
+)
+
+// ── Dashboard summary ─────────────────────────────────────────────────────
+
+@Serializable
+data class DashboardSummary(
+    @SerialName("total_balance") val totalBalance: Double = 0.0,
+    @SerialName("total_revenue") val totalRevenue: Double = 0.0,
+    @SerialName("total_expenses") val totalExpenses: Double = 0.0,
+    @SerialName("total_purchases") val totalPurchases: Double = 0.0,
+    @SerialName("total_returns") val totalReturns: Double = 0.0,
+    @SerialName("returns_count") val returnsCount: Int = 0,
+    @SerialName("net_profit") val netProfit: Double = 0.0,
+    val currency: String = "EGP",
+)
+
+@Serializable
+data class SalesTrendEntry(
+    val label: String,
+    val date: String,
+    val revenue: Double,
+    val orders: Int,
+)
+
+@Serializable
+data class TopProductEntry(
+    @SerialName("product_id") val productId: Int,
+    val name: String,
+    @SerialName("units_sold") val unitsSold: Int,
+    val revenue: Double,
+)
+
+// ── Reports ───────────────────────────────────────────────────────────────
+
+@Serializable
+data class IncomeStatementReport(
+    val period: ReportPeriod? = null,
+    val revenue: IncomeSection,
+    @SerialName("cost_of_goods_sold") val costOfGoodsSold: String,
+    @SerialName("gross_profit") val grossProfit: String,
+    val expenses: IncomeSection,
+    @SerialName("net_income") val netIncome: String,
+)
+
+@Serializable
+data class ReportPeriod(
+    val from: String,
+    val to: String,
+)
+
+@Serializable
+data class IncomeSection(
+    val total: String,
+    val breakdown: List<ReportLine> = emptyList(),
+)
+
+@Serializable
+data class DailySalesEntry(
+    val date: String,
+    @SerialName("orders_count") val ordersCount: Int,
+    @SerialName("total_sales") val totalSales: String,
+    @SerialName("total_returns") val totalReturns: String,
+    @SerialName("net_sales") val netSales: String,
+    @SerialName("cash_sales") val cashSales: String,
+    @SerialName("credit_sales") val creditSales: String,
+)
+
+@Serializable
+data class AgingClient(
+    @SerialName("client_id") val clientId: Int? = null,
+    @SerialName("supplier_id") val supplierId: Int? = null,
+    val name: String,
+    val current: String,
+    @SerialName("days_1_30") val days1To30: String,
+    @SerialName("days_31_60") val days31To60: String,
+    @SerialName("days_61_90") val days61To90: String,
+    @SerialName("over_90") val over90: String,
+    val total: String,
+)
+
+@Serializable
+data class AgingTotals(
+    val current: String,
+    @SerialName("days_1_30") val days1To30: String,
+    @SerialName("days_31_60") val days31To60: String,
+    @SerialName("days_61_90") val days61To90: String,
+    @SerialName("over_90") val over90: String,
+    val total: String,
+)
+
+@Serializable
+data class AgingReport(
+    @SerialName("as_of") val asOf: String,
+    val clients: List<AgingClient> = emptyList(),
+    val totals: AgingTotals? = null,
+)

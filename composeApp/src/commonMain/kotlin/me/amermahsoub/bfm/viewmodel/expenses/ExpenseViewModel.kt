@@ -57,7 +57,7 @@ class ExpenseViewModel(
         page: Int = 1,
     ) {
         _expensesState.load {
-            api.getExpenses(slug, categoryId, fromDate, toDate, page)
+            api.getExpenses(slug = slug, categoryId = categoryId, fromDate = fromDate, toDate = toDate, page = page)
         }
     }
 

@@ -24,7 +24,7 @@ class ShiftSummaryViewModel(
     private val _summaryState = MutableStateFlow<Result<ShiftSummary>>(Result.Loading)
     val summaryState: StateFlow<Result<ShiftSummary>> = _summaryState.asStateFlow()
 
-    fun loadSummary(shiftId: Int) {
-        _summaryState.load { api.getShiftSummary(slug, shiftId) }
+    fun loadSummary() {
+        _summaryState.load { api.getShiftSummary(slug) }
     }
 }

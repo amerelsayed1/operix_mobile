@@ -11,7 +11,7 @@ import kotlinx.datetime.toLocalDateTime
 import me.amermahsoub.bfm.shared.data.api.OperixApiService
 import me.amermahsoub.bfm.shared.data.models.Account
 import me.amermahsoub.bfm.shared.data.models.AccountStatementEntry
-import me.amermahsoub.bfm.shared.data.models.ProfitLossReport
+import me.amermahsoub.bfm.shared.data.models.IncomeStatementReport
 import me.amermahsoub.bfm.shared.data.models.Result
 import me.amermahsoub.bfm.shared.data.models.TrialBalanceRow
 import me.amermahsoub.bfm.shared.data.tenant.SessionStore
@@ -49,8 +49,8 @@ class ReportViewModel(
 
     // ── Profit & Loss ─────────────────────────────────────────────────────
 
-    private val _plState = MutableStateFlow<Result<ProfitLossReport>>(Result.Loading)
-    val plState: StateFlow<Result<ProfitLossReport>> = _plState.asStateFlow()
+    private val _plState = MutableStateFlow<Result<IncomeStatementReport>>(Result.Loading)
+    val plState: StateFlow<Result<IncomeStatementReport>> = _plState.asStateFlow()
 
     // ── Trial Balance ─────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ class ReportViewModel(
 
     fun loadProfitLoss() {
         _plState.load {
-            api.getProfitLoss(slug, _fromDate.value, _toDate.value)
+            api.getIncomeStatement(slug, _fromDate.value, _toDate.value)
         }
     }
 

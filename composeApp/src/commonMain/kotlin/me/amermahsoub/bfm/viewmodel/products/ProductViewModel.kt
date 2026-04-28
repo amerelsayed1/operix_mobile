@@ -41,13 +41,19 @@ class ProductViewModel(
     fun loadProducts(search: String? = null, categoryId: Int? = null, page: Int = 1) {
         currentPage = page
         if (search != null) _searchQuery.value = search
-        _productsState.load { api.getProducts(slug, search ?: _searchQuery.value.ifBlank { null }, categoryId, null, page) }
+        _productsState.load {
+            api.getProducts(slug = slug, search = search ?: _searchQuery.value.ifBlank { null },
+                categoryId = categoryId, page = page)
+        }
     }
 
     fun loadProducts(search: String? = null, categoryId: Int? = null, isActive: Boolean? = null, page: Int = 1) {
         currentPage = page
         if (search != null) _searchQuery.value = search
-        _productsState.load { api.getProducts(slug, search ?: _searchQuery.value.ifBlank { null }, categoryId, isActive, page) }
+        _productsState.load {
+            api.getProducts(slug = slug, search = search ?: _searchQuery.value.ifBlank { null },
+                categoryId = categoryId, isActive = isActive, page = page)
+        }
     }
 
     fun loadProduct(id: Int) {

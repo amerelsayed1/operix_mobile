@@ -137,7 +137,7 @@ fun PosTerminalScreen(
                                 onClick = {
                                     scope.launch {
                                         pendingTerminal = terminal
-                                        viewModel.loadCurrentShift(terminal.id)
+                                        viewModel.loadCurrentShift()
                                     }
                                 },
                             )

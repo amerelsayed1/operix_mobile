@@ -45,7 +45,7 @@ class SupplierViewModel(
     }
 
     fun loadStatement(supplierId: Int, fromDate: String, toDate: String) {
-        _statementState.load { api.getSupplierStatement(slug, supplierId, fromDate, toDate) }
+        _statementState.load { api.getSupplierLedger(slug, supplierId, fromDate, toDate) }
     }
 
     suspend fun createSupplier(
