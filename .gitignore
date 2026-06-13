@@ -1,4 +1,9 @@
 *.iml
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+coverage/
 .kotlin
 .gradle
 **/build/

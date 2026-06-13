@@ -1,5 +1,7 @@
 # Operix Mobile App — Software Requirements Specification (SRS)
 
+> Current Flutter desktop direction: use [local-business-requirements.md](./local-business-requirements.md) as the active business baseline. The older SRS files in this folder describe the previous tenant/SaaS mobile companion concept and are retained only as reference material.
+
 This folder contains the complete, implementation-ready Software Requirements Specification for the **Operix Tenant Mobile App**.
 
 It is intentionally split into multiple files so that each area can be picked up, versioned, and reviewed independently. It is designed to be **self-contained**: a new engineering session should be able to implement the mobile app end-to-end by reading these documents without additional context hunting.
