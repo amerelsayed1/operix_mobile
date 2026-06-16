@@ -1,5 +1,8 @@
 // Inventory domain models for product management (the create/edit form and the
-// products list). Mirrors the Operix web product fields.
+// products list). Mirrors the Operix web product fields. Monetary fields use
+// [Money] (mirror of decimal(15,2)), never double.
+
+import 'value_objects/money.dart';
 
 /// Common units offered in the product form (free text is also allowed).
 const List<String> kProductUnits = [
@@ -35,14 +38,14 @@ class Product {
   final String? barcode;
   final String category;
   final String unit;
-  final double costPrice;
-  final double sellingPrice;
+  final Money costPrice;
+  final Money sellingPrice;
   final int minimumStockAlert;
   final int quantityOnHand;
   final bool isActive;
 
   bool get isLowStock => quantityOnHand <= minimumStockAlert;
-  double get margin => sellingPrice - costPrice;
+  Money get margin => sellingPrice.subtract(costPrice);
 }
 
 /// Input for creating or updating a product.
@@ -65,8 +68,8 @@ class ProductDraft {
   final String? barcode;
   final String category;
   final String unit;
-  final double costPrice;
-  final double sellingPrice;
+  final Money costPrice;
+  final Money sellingPrice;
   final int minimumStockAlert;
   final int quantityOnHand;
   final bool isActive;

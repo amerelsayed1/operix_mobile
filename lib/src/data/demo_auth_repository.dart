@@ -56,4 +56,12 @@ class DemoAuthRepository implements AuthRepository {
       'Incorrect username or password.',
     );
   }
+
+  @override
+  Future<AppUser?> findUser(int id) async {
+    for (final entry in _users) {
+      if (entry.user.id == id) return entry.user;
+    }
+    return null;
+  }
 }

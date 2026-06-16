@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import '../../app/l10n_ext.dart';
 import '../../app/operix_theme.dart';
+import '../../data/category_repository.dart';
 import '../../data/product_repository.dart';
+import '../../data/unit_repository.dart';
+import '../../domain/catalog_models.dart';
 import '../../domain/inventory_models.dart';
+import '../../domain/value_objects/money.dart';
 
 /// Create / edit product form, mirroring the Operix web `/products/create`
 /// fields. Pushed as a full-screen route; pops `true` when a product is saved.
@@ -34,7 +40,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   bool _isActive = true;
   bool _saving = false;
   String? _error;
-  List<String> _categories = [];
+  List<ProductCategory> _categoryList = [];
+  List<Unit> _unitList = [];
 
   @override
   void initState() {
@@ -60,9 +67,28 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   }
 
   Future<void> _bootstrap() async {
+    // Source categories and units from the managed catalogues (Settings → Item
+    // categories / Units) rather than free text and a hardcoded list. The locale
+    // is resolved later in build() — Localizations can't be read from initState.
+    final categoryRepo = context.read<CategoryRepository>();
+    final unitRepo = context.read<UnitRepository>();
     try {
-      final categories = await widget.repository.categories();
-      if (mounted) setState(() => _categories = categories);
+      final cats = await categoryRepo.list();
+      if (mounted) setState(() => _categoryList = cats);
+    } catch (_) {}
+    try {
+      final units = await unitRepo.list();
+      if (mounted) {
+        setState(() {
+          _unitList = units;
+          // A new product defaults to the configured default unit (stored as its
+          // locale-free canonical name, which is also the dropdown item value).
+          if (!widget.isEditing) {
+            final def = units.where((u) => u.isDefault);
+            if (def.isNotEmpty) _unit = def.first.canonicalName;
+          }
+        });
+      }
     } catch (_) {}
     if (!widget.isEditing) {
       try {
@@ -72,8 +98,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
-  String _money(double v) =>
-      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+  String _money(Money v) {
+    final s = v.toStorageString();
+    return s.endsWith('.00') ? s.substring(0, s.length - 3) : s;
+  }
 
   @override
   void dispose() {
@@ -102,8 +130,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       barcode: _barcode.text,
       category: _category.text,
       unit: _unit,
-      costPrice: double.tryParse(_costPrice.text.trim()) ?? 0,
-      sellingPrice: double.tryParse(_sellingPrice.text.trim()) ?? 0,
+      costPrice: Money.fromNum(double.tryParse(_costPrice.text.trim()) ?? 0),
+      sellingPrice: Money.fromNum(
+        double.tryParse(_sellingPrice.text.trim()) ?? 0,
+      ),
       minimumStockAlert: int.tryParse(_minStock.text.trim()) ?? 0,
       quantityOnHand: int.tryParse(_stock.text.trim()) ?? 0,
       isActive: _isActive,
@@ -126,7 +156,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       setState(() => _error = e.message);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Could not save product: $e');
+      setState(() => _error = context.l10n.couldNotSaveProduct('$e'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -134,11 +164,28 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final units = {..._unitOptions};
+    final l10n = context.l10n;
+    final arabic = Localizations.localeOf(context).languageCode == 'ar';
+    // Dropdown items: value = locale-free canonical name (what we persist),
+    // label = localized display name. Always include the current value so the
+    // field never holds a value absent from its items.
+    final unitOptions = <String, String>{};
+    if (_unitList.isEmpty) {
+      for (final u in kProductUnits) {
+        unitOptions[u] = u;
+      }
+    } else {
+      for (final u in _unitList) {
+        unitOptions[u.canonicalName] = u.displayName(arabic);
+      }
+    }
+    if (_unit.isNotEmpty) unitOptions.putIfAbsent(_unit, () => _unit);
     return Scaffold(
       backgroundColor: OperixColors.background,
       appBar: AppBar(
-        title: Text(widget.isEditing ? 'Edit product' : 'New product'),
+        title: Text(
+          widget.isEditing ? l10n.editProductTitle : l10n.newProductTitle,
+        ),
         backgroundColor: Colors.white,
         foregroundColor: OperixColors.ink,
         elevation: 0,
@@ -155,14 +202,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _Section(
-                    title: 'Product details',
+                    title: l10n.sectionProductDetails,
                     children: [
                       _field(
                         controller: _name,
-                        label: 'Product name *',
-                        hint: 'e.g. Wireless Keyboard',
+                        label: l10n.productNameLabel,
+                        hint: l10n.productNameHint,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Name is required'
+                            ? l10n.nameRequired
                             : null,
                       ),
                       Row(
@@ -171,10 +218,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           Expanded(
                             child: _field(
                               controller: _sku,
-                              label: 'SKU *',
-                              hint: 'Stock keeping unit',
+                              label: l10n.skuLabel,
+                              hint: l10n.skuHint,
                               validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? 'SKU is required'
+                                  ? l10n.skuRequired
                                   : null,
                             ),
                           ),
@@ -182,8 +229,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           Expanded(
                             child: _field(
                               controller: _barcode,
-                              label: 'Barcode',
-                              hint: 'Optional',
+                              label: l10n.barcodeLabel,
+                              hint: l10n.optional,
                             ),
                           ),
                         ],
@@ -191,16 +238,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _categoryField()),
+                          Expanded(child: _categoryField(arabic)),
                           const SizedBox(width: 16),
-                          Expanded(child: _unitField(units)),
+                          Expanded(child: _unitField(unitOptions)),
                         ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   _Section(
-                    title: 'Pricing',
+                    title: l10n.sectionPricing,
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +255,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           Expanded(
                             child: _numberField(
                               controller: _costPrice,
-                              label: 'Cost price',
+                              label: l10n.costPriceLabel,
                               prefix: 'EGP ',
                             ),
                           ),
@@ -216,12 +263,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           Expanded(
                             child: _numberField(
                               controller: _sellingPrice,
-                              label: 'Selling price *',
+                              label: l10n.sellingPriceLabel,
                               prefix: 'EGP ',
                               validator: (v) {
                                 final value = double.tryParse((v ?? '').trim());
-                                if (value == null) return 'Enter a valid price';
-                                if (value < 0) return 'Cannot be negative';
+                                if (value == null) return l10n.enterValidPrice;
+                                if (value < 0) return l10n.cannotBeNegative;
                                 return null;
                               },
                             ),
@@ -232,7 +279,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   ),
                   const SizedBox(height: 16),
                   _Section(
-                    title: 'Inventory',
+                    title: l10n.sectionInventory,
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,8 +288,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                             child: _numberField(
                               controller: _stock,
                               label: widget.isEditing
-                                  ? 'Stock on hand'
-                                  : 'Opening stock',
+                                  ? l10n.stockOnHand
+                                  : l10n.openingStock,
                               integer: true,
                             ),
                           ),
@@ -250,7 +297,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           Expanded(
                             child: _numberField(
                               controller: _minStock,
-                              label: 'Minimum stock alert',
+                              label: l10n.minimumStockAlert,
                               integer: true,
                             ),
                           ),
@@ -259,13 +306,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       const SizedBox(height: 4),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Active',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                        title: Text(
+                          l10n.activeLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: const Text(
-                          'Inactive products are hidden from the POS',
-                        ),
+                        subtitle: Text(l10n.activeSubtitle),
                         value: _isActive,
                         onChanged: (v) => setState(() => _isActive = v),
                       ),
@@ -283,7 +328,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         onPressed: _saving
                             ? null
                             : () => Navigator.of(context).pop(false),
-                        child: const Text('Cancel'),
+                        child: Text(l10n.cancel),
                       ),
                       const SizedBox(width: 12),
                       FilledButton.icon(
@@ -299,7 +344,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                               )
                             : const Icon(Icons.save_outlined),
                         label: Text(
-                          widget.isEditing ? 'Save changes' : 'Create product',
+                          widget.isEditing
+                              ? l10n.saveChanges
+                              : l10n.createProductAction,
                         ),
                       ),
                     ],
@@ -312,8 +359,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
     );
   }
-
-  Set<String> get _unitOptions => {...kProductUnits, _unit};
 
   Widget _field({
     required TextEditingController controller,
@@ -364,25 +409,29 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  Widget _categoryField() {
+  Widget _categoryField(bool arabic) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: _category,
         decoration: InputDecoration(
-          labelText: 'Category',
-          hintText: 'e.g. Electronics',
+          labelText: l10n.categoryLabel,
+          hintText: l10n.categoryHint,
           border: const OutlineInputBorder(),
           isDense: true,
-          suffixIcon: _categories.isEmpty
+          suffixIcon: _categoryList.isEmpty
               ? null
               : PopupMenuButton<String>(
-                  tooltip: 'Pick existing',
+                  tooltip: l10n.pickExisting,
                   icon: const Icon(Icons.arrow_drop_down),
                   onSelected: (value) => _category.text = value,
                   itemBuilder: (context) => [
-                    for (final c in _categories)
-                      PopupMenuItem(value: c, child: Text(c)),
+                    for (final c in _categoryList)
+                      PopupMenuItem(
+                        value: c.canonicalName,
+                        child: Text(c.displayName(arabic)),
+                      ),
                   ],
                 ),
         ),
@@ -390,20 +439,22 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  Widget _unitField(Set<String> units) {
+  Widget _unitField(Map<String, String> options) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
+        key: ValueKey('unit-$_unit'),
         initialValue: _unit,
-        decoration: const InputDecoration(
-          labelText: 'Unit',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: context.l10n.unitLabel,
+          border: const OutlineInputBorder(),
           isDense: true,
         ),
         items: [
-          for (final u in units) DropdownMenuItem(value: u, child: Text(u)),
+          for (final entry in options.entries)
+            DropdownMenuItem(value: entry.key, child: Text(entry.value)),
         ],
-        onChanged: (value) => setState(() => _unit = value ?? 'Piece'),
+        onChanged: (value) => setState(() => _unit = value ?? _unit),
       ),
     );
   }

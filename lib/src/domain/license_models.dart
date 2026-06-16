@@ -37,11 +37,11 @@ class OperixLicense {
   bool get isExpired => DateTime.now().toUtc().isAfter(expiresAt.toUtc());
 
   int get daysRemaining {
-    final remaining = expiresAt
-        .toUtc()
-        .difference(DateTime.now().toUtc())
-        .inDays;
-    return remaining < 0 ? 0 : remaining;
+    final remaining = expiresAt.toUtc().difference(DateTime.now().toUtc());
+    if (remaining.isNegative) return 0;
+    // Round up: a license with 23h left has 1 day remaining, not 0. Using
+    // `.inDays` (which truncates) reported a still-valid license as "0 days".
+    return (remaining.inMinutes / Duration.minutesPerDay).ceil();
   }
 
   Map<String, Object?> toJson() {

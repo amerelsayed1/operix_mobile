@@ -1,6 +1,7 @@
 import 'package:postgres/postgres.dart';
 
 import '../domain/pos_models.dart';
+import '../domain/value_objects/money.dart';
 import 'operix_database.dart';
 import 'pos_repository.dart';
 
@@ -15,10 +16,12 @@ class PostgresPosRepository implements PosRepository {
   @override
   Future<List<PosProduct>> loadProducts() async {
     final conn = await database.connection();
+    // Only sellable stock shows on the terminal — out-of-stock items are hidden
+    // (they can't be sold and the checkout guard would reject them anyway).
     final result = await conn.execute('''
       SELECT id, sku, name, category, quantity_on_hand, unit_price
       FROM products
-      WHERE is_active = TRUE
+      WHERE is_active = TRUE AND quantity_on_hand > 0
       ORDER BY category ASC, name ASC
     ''');
     return result.map((row) {
@@ -28,7 +31,7 @@ class PostgresPosRepository implements PosRepository {
         sku: _asString(map['sku']),
         name: _asString(map['name']),
         category: _asString(map['category']),
-        unitPrice: _asDouble(map['unit_price']),
+        unitPrice: _asMoney(map['unit_price']),
         quantityOnHand: _asInt(map['quantity_on_hand']),
       );
     }).toList();
@@ -57,29 +60,34 @@ class PostgresPosRepository implements PosRepository {
   @override
   Future<PosShift> openShift({
     required AppUser cashier,
-    required double openingFloat,
+    required Money openingFloat,
   }) async {
     final conn = await database.connection();
-    final seq = await conn.execute(
-      "SELECT nextval('pos_shift_seq')::bigint AS seq",
-    );
-    final shiftNumber =
-        'SH-${_asInt(seq.first.toColumnMap()['seq']).toString().padLeft(4, '0')}';
+    // Sequence fetch + insert in one transaction so a crash can't burn a shift
+    // number without a matching row.
+    final result = await conn.runTx((session) async {
+      final seq = await session.execute(
+        "SELECT nextval('pos_shift_seq')::bigint AS seq",
+      );
+      final shiftNumber =
+          'SH-${_asInt(seq.first.toColumnMap()['seq']).toString().padLeft(4, '0')}';
 
-    final result = await conn.execute(
-      Sql.named('''
-        INSERT INTO pos_shifts (shift_number, cashier_id, cashier_name, opening_float, status)
-        VALUES (@number, @cashier_id, @cashier_name, @opening_float, 'open')
-        RETURNING id, opened_at
-      '''),
-      parameters: {
-        'number': shiftNumber,
-        'cashier_id': cashier.id,
-        'cashier_name': cashier.fullName,
-        'opening_float': openingFloat,
-      },
-    );
+      return session.execute(
+        Sql.named('''
+          INSERT INTO pos_shifts (shift_number, cashier_id, cashier_name, opening_float, status)
+          VALUES (@number, @cashier_id, @cashier_name, @opening_float, 'open')
+          RETURNING id, shift_number, opened_at
+        '''),
+        parameters: {
+          'number': shiftNumber,
+          'cashier_id': cashier.id,
+          'cashier_name': cashier.fullName,
+          'opening_float': openingFloat.toStorageString(),
+        },
+      );
+    });
     final map = result.first.toColumnMap();
+    final shiftNumber = _asString(map['shift_number']);
     return PosShift(
       id: _asInt(map['id']),
       shiftNumber: shiftNumber,
@@ -94,43 +102,66 @@ class PostgresPosRepository implements PosRepository {
   @override
   Future<PosShift> closeShift({
     required PosShift shift,
-    required double countedCash,
+    required Money countedCash,
     String? notes,
   }) async {
     final conn = await database.connection();
-    final cashResult = await conn.execute(
-      Sql.named('''
-        SELECT COALESCE(SUM(p.amount), 0) AS cash
-        FROM pos_order_payments p
-        JOIN pos_orders o ON o.id = p.pos_order_id
-        WHERE o.shift_id = @shift_id AND p.method = 'cash'
-      '''),
-      parameters: {'shift_id': shift.id},
-    );
-    final cashSales = _asDouble(cashResult.first.toColumnMap()['cash']);
-    final expectedCash = shift.openingFloat + cashSales;
-    final difference = countedCash - expectedCash;
+    // Read the cash total and write the close-out in one transaction so a
+    // concurrent sale on the same shift can't slip in between the SUM and the
+    // UPDATE and leave expected_cash stale.
+    final (expectedCash, difference, result) = await conn.runTx((
+      session,
+    ) async {
+      final cashResult = await session.execute(
+        Sql.named('''
+          SELECT
+            (SELECT COALESCE(SUM(p.amount), 0)
+               FROM pos_order_payments p
+               JOIN pos_orders o ON o.id = p.pos_order_id
+               WHERE o.shift_id = @shift_id AND p.method = 'cash') AS cash_in,
+            (SELECT COALESCE(SUM(o.change_amount), 0)
+               FROM pos_orders o
+               WHERE o.shift_id = @shift_id) AS change_out,
+            (SELECT COALESCE(SUM(r.total_amount), 0)
+               FROM sales_returns r
+               WHERE r.shift_id = @shift_id AND r.refund_method = 'cash') AS refund_out
+        '''),
+        parameters: {'shift_id': shift.id},
+      );
+      final cashMap = cashResult.first.toColumnMap();
+      final cashSales = _asMoney(cashMap['cash_in']);
+      final changeGiven = _asMoney(cashMap['change_out']);
+      final cashRefunds = _asMoney(cashMap['refund_out']);
+      // Cash tendered enters the drawer; change handed back and cash refunds
+      // paid out both leave it.
+      final expected = shift.openingFloat
+          .add(cashSales)
+          .subtract(changeGiven)
+          .subtract(cashRefunds);
+      final diff = countedCash.subtract(expected);
 
-    final result = await conn.execute(
-      Sql.named('''
-        UPDATE pos_shifts
-        SET status = 'closed',
-            expected_cash = @expected,
-            counted_cash = @counted,
-            cash_difference = @difference,
-            notes = @notes,
-            closed_at = NOW()
-        WHERE id = @shift_id
-        RETURNING closed_at
-      '''),
-      parameters: {
-        'expected': expectedCash,
-        'counted': countedCash,
-        'difference': difference,
-        'notes': notes,
-        'shift_id': shift.id,
-      },
-    );
+      final updated = await session.execute(
+        Sql.named('''
+          UPDATE pos_shifts
+          SET status = 'closed',
+              expected_cash = @expected,
+              counted_cash = @counted,
+              cash_difference = @difference,
+              notes = @notes,
+              closed_at = NOW()
+          WHERE id = @shift_id
+          RETURNING closed_at
+        '''),
+        parameters: {
+          'expected': expected.toStorageString(),
+          'counted': countedCash.toStorageString(),
+          'difference': diff.toStorageString(),
+          'notes': notes,
+          'shift_id': shift.id,
+        },
+      );
+      return (expected, diff, updated);
+    });
 
     return PosShift(
       id: shift.id,
@@ -153,6 +184,16 @@ class PostgresPosRepository implements PosRepository {
     final conn = await database.connection();
     try {
       return await conn.runTx((session) async {
+        // Resolve GL accounts before drawing the receipt number so a misconfigured
+        // chart of accounts can't burn a number from the sequence.
+        final accounts = await _resolveAccounts(session, const [
+          '1100', // Cash / drawer
+          '4100', // Sales Revenue
+          '2200', // Tax Payable (output VAT)
+          '5100', // Cost of Goods Sold
+          '1300', // Inventory
+        ]);
+
         final seqResult = await session.execute(
           "SELECT nextval('pos_receipt_seq')::bigint AS seq",
         );
@@ -178,12 +219,12 @@ class PostgresPosRepository implements PosRepository {
             'cashier_id': request.cashier.id,
             'cashier_name': request.cashier.fullName,
             'customer_name': request.customerName,
-            'subtotal': request.subtotal,
-            'discount': request.discount,
-            'tax': request.tax,
-            'total': request.total,
-            'paid': request.paidAmount,
-            'change': request.changeAmount,
+            'subtotal': request.subtotal.toStorageString(),
+            'discount': request.discount.toStorageString(),
+            'tax': request.tax.toStorageString(),
+            'total': request.total.toStorageString(),
+            'paid': request.paidAmount.toStorageString(),
+            'change': request.changeAmount.toStorageString(),
           },
         );
         final orderMap = orderResult.first.toColumnMap();
@@ -191,26 +232,19 @@ class PostgresPosRepository implements PosRepository {
         final createdAt = _asDate(orderMap['created_at']);
 
         final receiptLines = <ReceiptLine>[];
+        // Accumulate COGS from the live weighted-average cost relieved per line,
+        // so the COGS/Inventory journal ties out to what inventory actually held.
+        var cogs = Money.zero();
         for (final line in request.lines) {
-          await session.execute(
-            Sql.named('''
-              INSERT INTO pos_order_items (pos_order_id, product_id, name, quantity, unit_price)
-              VALUES (@order_id, @product_id, @name, @quantity, @unit_price)
-            '''),
-            parameters: {
-              'order_id': orderId,
-              'product_id': line.product.id,
-              'name': line.product.name,
-              'quantity': line.quantity,
-              'unit_price': line.product.unitPrice,
-            },
-          );
-
+          // Relieve stock first and read back the cost it was carried at, so the
+          // order line records the exact cost basis (used for COGS and for an
+          // accurate reversal if the line is later returned).
           final updated = await session.execute(
             Sql.named('''
               UPDATE products
               SET quantity_on_hand = quantity_on_hand - @quantity
               WHERE id = @product_id AND quantity_on_hand >= @quantity
+              RETURNING cost_price
             '''),
             parameters: {
               'quantity': line.quantity,
@@ -221,6 +255,39 @@ class PostgresPosRepository implements PosRepository {
             // Transaction rolls back automatically when we throw.
             throw InsufficientStockException(line.product.name);
           }
+          final unitCost = Money.parse(
+            updated.first.toColumnMap()['cost_price'],
+          );
+          cogs = cogs.add(unitCost.multiply(line.quantity));
+
+          await session.execute(
+            Sql.named('''
+              INSERT INTO pos_order_items (pos_order_id, product_id, name, quantity, unit_price, unit_cost)
+              VALUES (@order_id, @product_id, @name, @quantity, @unit_price, @unit_cost)
+            '''),
+            parameters: {
+              'order_id': orderId,
+              'product_id': line.product.id,
+              'name': line.product.name,
+              'quantity': line.quantity,
+              'unit_price': line.product.unitPrice.toStorageString(),
+              'unit_cost': unitCost.toStorageString(),
+            },
+          );
+
+          // Record the stock movement for the audit log (negative = stock out).
+          await session.execute(
+            Sql.named('''
+              INSERT INTO stock_movements
+                (product_id, type, quantity, reference_type, reference_id)
+              VALUES (@product_id, 'pos_sale', @quantity, 'pos_order', @order_id)
+            '''),
+            parameters: {
+              'product_id': line.product.id,
+              'quantity': -line.quantity,
+              'order_id': orderId,
+            },
+          );
 
           receiptLines.add(
             ReceiptLine(
@@ -244,11 +311,65 @@ class PostgresPosRepository implements PosRepository {
               'label': payment.method == PaymentMethod.custom
                   ? payment.label
                   : null,
-              'amount': payment.amount,
+              'amount': payment.amount.toStorageString(),
               'reference': payment.reference,
             },
           );
         }
+
+        // Post the sale to the GL so POS revenue, output VAT and COGS hit the
+        // books like a sales invoice does. Cash POS sales settle in full at the
+        // till, so the money leg debits Cash (1100):
+        //   Dr Cash (total)        Cr Sales Revenue (net of discount)
+        //                          Cr Tax Payable   (tax)
+        //   Dr COGS (cost)         Cr Inventory     (cost)
+        cogs = cogs.rounded();
+        final revenue = request.subtotal.subtract(request.discount);
+        final refResult = await session.execute(
+          "SELECT 'JE-' || LPAD(nextval('journal_entry_seq')::text, 6, '0') AS ref",
+        );
+        final reference = refResult.first.toColumnMap()['ref'] as String;
+        final entryResult = await session.execute(
+          Sql.named('''
+            INSERT INTO journal_entries (
+              reference_no, source_type, source_id, entry_type, description,
+              transaction_date, posted_at, status
+            ) VALUES (
+              @ref, 'pos_order', @source_id, 'sale_posting', @description,
+              CURRENT_DATE, NOW(), 'posted'
+            )
+            RETURNING id
+          '''),
+          parameters: {
+            'ref': reference,
+            'source_id': orderId,
+            'description': 'POS sale $receiptNumber',
+          },
+        );
+        final entryId = _asInt(entryResult.first.toColumnMap()['id']);
+
+        Future<void> postLine(String code, String type, Money amount) async {
+          if (!amount.isPositive) return;
+          await session.execute(
+            Sql.named('''
+              INSERT INTO journal_entry_lines
+                (journal_entry_id, gl_account_id, line_type, amount)
+              VALUES (@entry, @account, @type, @amount)
+            '''),
+            parameters: {
+              'entry': entryId,
+              'account': accounts[code],
+              'type': type,
+              'amount': amount.toStorageString(),
+            },
+          );
+        }
+
+        await postLine('1100', 'debit', request.total); // Cash / drawer
+        await postLine('4100', 'credit', revenue); // Sales Revenue
+        await postLine('2200', 'credit', request.tax); // Tax Payable
+        await postLine('5100', 'debit', cogs); // COGS
+        await postLine('1300', 'credit', cogs); // Inventory
 
         return PosReceipt(
           id: orderId,
@@ -310,7 +431,7 @@ class PostgresPosRepository implements PosRepository {
         id: _asInt(map['id']),
         receiptNumber: _asString(map['receipt_number']),
         createdAt: _asDate(map['created_at']),
-        total: _asDouble(map['total_amount']),
+        total: _asMoney(map['total_amount']),
         itemCount: _asInt(map['item_count']),
         paymentSummary: _asString(map['methods']),
         status: _asString(map['status']),
@@ -352,7 +473,7 @@ class PostgresPosRepository implements PosRepository {
         name: _asString(map['name']),
         sku: _asString(map['sku']),
         quantity: _asInt(map['quantity']),
-        unitPrice: _asDouble(map['unit_price']),
+        unitPrice: _asMoney(map['unit_price']),
       );
     }).toList();
 
@@ -369,7 +490,7 @@ class PostgresPosRepository implements PosRepository {
       final map = row.toColumnMap();
       return PosPayment(
         method: PaymentMethodX.fromWire(_asString(map['method'])),
-        amount: _asDouble(map['amount']),
+        amount: _asMoney(map['amount']),
         label: map['method_label'] as String?,
         reference: map['reference'] as String?,
       );
@@ -382,12 +503,12 @@ class PostgresPosRepository implements PosRepository {
       createdAt: _asDate(head['created_at']),
       lines: lines,
       payments: payments,
-      subtotal: _asDouble(head['subtotal']),
-      discount: _asDouble(head['discount_amount']),
-      tax: _asDouble(head['tax_amount']),
-      total: _asDouble(head['total_amount']),
-      paidAmount: _asDouble(head['paid_amount']),
-      changeAmount: _asDouble(head['change_amount']),
+      subtotal: _asMoney(head['subtotal']),
+      discount: _asMoney(head['discount_amount']),
+      tax: _asMoney(head['tax_amount']),
+      total: _asMoney(head['total_amount']),
+      paidAmount: _asMoney(head['paid_amount']),
+      changeAmount: _asMoney(head['change_amount']),
       customerName: head['customer_name'] as String?,
     );
   }
@@ -398,12 +519,37 @@ class PostgresPosRepository implements PosRepository {
       shiftNumber: _asString(map['shift_number']),
       cashierId: _asInt(map['cashier_id']),
       cashierName: _asString(map['cashier_name']),
-      openingFloat: _asDouble(map['opening_float']),
+      openingFloat: _asMoney(map['opening_float']),
       status: _asString(map['status']),
       openedAt: _asDate(map['opened_at']),
       closedAt: map['closed_at'] == null ? null : _asDate(map['closed_at']),
       notes: map['notes'] as String?,
     );
+  }
+
+  /// Resolves each GL [codes] entry to its account id, throwing loudly if any is
+  /// missing so the sale rolls back before a receipt number is drawn.
+  Future<Map<String, int>> _resolveAccounts(
+    Session session,
+    List<String> codes,
+  ) async {
+    final result = await session.execute(
+      Sql.named('SELECT code, id FROM gl_accounts WHERE code = ANY(@codes)'),
+      parameters: {'codes': codes},
+    );
+    final map = <String, int>{};
+    for (final row in result) {
+      final m = row.toColumnMap();
+      map[m['code'] as String] = _asInt(m['id']);
+    }
+    for (final code in codes) {
+      if (!map.containsKey(code)) {
+        throw PosException(
+          'GL account "$code" is not configured; cannot post the sale.',
+        );
+      }
+    }
+    return map;
   }
 
   String _asString(Object? value) => value?.toString() ?? '';
@@ -414,11 +560,7 @@ class PostgresPosRepository implements PosRepository {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  double _asDouble(Object? value) {
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
+  Money _asMoney(Object? value) => Money.parse(value);
 
   DateTime _asDate(Object? value) {
     if (value is DateTime) return value;

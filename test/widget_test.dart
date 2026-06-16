@@ -8,26 +8,49 @@ import 'package:operix_mobile/src/app/operix_app.dart';
 import 'package:operix_mobile/src/config/database_config.dart';
 import 'package:operix_mobile/src/data/auth_repository.dart';
 import 'package:operix_mobile/src/data/business_repository.dart';
+import 'package:operix_mobile/src/data/customer_repository.dart';
 import 'package:operix_mobile/src/data/demo_auth_repository.dart';
 import 'package:operix_mobile/src/data/demo_business_repository.dart';
+import 'package:operix_mobile/src/data/demo_customer_repository.dart';
+import 'package:operix_mobile/src/data/demo_supplier_repository.dart';
+import 'package:operix_mobile/src/data/demo_user_admin_repository.dart';
+import 'package:operix_mobile/src/data/demo_role_repository.dart';
+import 'package:operix_mobile/src/data/role_repository.dart';
+import 'package:operix_mobile/src/data/category_repository.dart';
+import 'package:operix_mobile/src/data/demo_category_repository.dart';
+import 'package:operix_mobile/src/data/unit_repository.dart';
+import 'package:operix_mobile/src/data/demo_unit_repository.dart';
 import 'package:operix_mobile/src/data/demo_license_repository.dart';
 import 'package:operix_mobile/src/data/demo_operix_repository.dart';
 import 'package:operix_mobile/src/data/demo_pos_repository.dart';
 import 'package:operix_mobile/src/data/demo_product_repository.dart';
+import 'package:operix_mobile/src/data/demo_returns_repository.dart';
+import 'package:operix_mobile/src/data/demo_purchase_invoice_repository.dart';
+import 'package:operix_mobile/src/data/demo_sales_invoice_repository.dart';
+import 'package:operix_mobile/src/data/demo_sales_report_repository.dart';
+import 'package:operix_mobile/src/data/demo_stock_repository.dart';
 import 'package:operix_mobile/src/data/license_repository.dart';
 import 'package:operix_mobile/src/data/operix_repository.dart';
 import 'package:operix_mobile/src/data/pos_repository.dart';
 import 'package:operix_mobile/src/data/product_repository.dart';
+import 'package:operix_mobile/src/data/returns_repository.dart';
+import 'package:operix_mobile/src/data/purchase_invoice_repository.dart';
+import 'package:operix_mobile/src/data/sales_invoice_repository.dart';
+import 'package:operix_mobile/src/data/sales_report_repository.dart';
+import 'package:operix_mobile/src/data/stock_repository.dart';
+import 'package:operix_mobile/src/data/supplier_repository.dart';
+import 'package:operix_mobile/src/data/user_admin_repository.dart';
 import 'package:operix_mobile/src/domain/license_models.dart';
 import 'package:operix_mobile/src/domain/pos_models.dart';
+import 'package:operix_mobile/src/domain/value_objects/money.dart';
 import 'package:operix_mobile/src/licensing/license_constants.dart';
 
-const _testProduct = PosProduct(
+final _testProduct = PosProduct(
   id: 1,
   sku: 'TST-1',
   name: 'Test Shirt',
   category: 'Apparel',
-  unitPrice: 100,
+  unitPrice: Money.of('100'),
   quantityOnHand: 10,
 );
 
@@ -110,6 +133,21 @@ Widget _bootstrap({
         value: DemoPosRepository(products: products),
       ),
       Provider<ProductRepository>.value(value: DemoProductRepository()),
+      Provider<SalesReportRepository>.value(value: DemoSalesReportRepository()),
+      Provider<SalesInvoiceRepository>.value(
+        value: DemoSalesInvoiceRepository(),
+      ),
+      Provider<PurchaseInvoiceRepository>.value(
+        value: DemoPurchaseInvoiceRepository(),
+      ),
+      Provider<StockRepository>.value(value: DemoStockRepository()),
+      Provider<ReturnsRepository>.value(value: DemoReturnsRepository()),
+      Provider<CustomerRepository>.value(value: DemoCustomerRepository()),
+      Provider<SupplierRepository>.value(value: DemoSupplierRepository()),
+      Provider<UserAdminRepository>.value(value: DemoUserAdminRepository()),
+      Provider<RoleRepository>.value(value: DemoRoleRepository()),
+      Provider<CategoryRepository>.value(value: DemoCategoryRepository()),
+      Provider<UnitRepository>.value(value: DemoUnitRepository()),
       ChangeNotifierProvider<LocaleController>(
         create: (_) => LocaleController(),
       ),
@@ -157,6 +195,23 @@ Future<void> _completeSetup(WidgetTester tester) async {
   await tester.tap(
     find.widgetWithText(FilledButton, 'Create account & continue'),
   );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _tapSidebarItem(WidgetTester tester, String label) async {
+  final item = find.text(label);
+  final scrollable = find.byType(Scrollable).first;
+  if (item.evaluate().isEmpty) {
+    await tester.dragUntilVisible(
+      item,
+      scrollable,
+      const Offset(0, -360),
+      maxIteration: 20,
+    );
+  }
+  await tester.ensureVisible(item.first);
+  await tester.pumpAndSettle();
+  await tester.tap(item.first);
   await tester.pumpAndSettle();
 }
 
@@ -218,8 +273,89 @@ void main() {
     await _completeBusinessSetup(tester);
     await _completeSetup(tester);
 
-    expect(find.text('POS'), findsWidgets);
+    expect(find.text('Finance'), findsOneWidget);
+    expect(find.text('POS'), findsNothing);
     expect(find.text('Dashboard'), findsWidgets);
+  });
+
+  testWidgets('dashboard quick actions open their target workspace', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1600, 1000));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    expect(find.text('New sales invoice'), findsOneWidget);
+
+    await tester.tap(find.text('New sales invoice'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Create an official invoice for wholesalers or businesses.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('dashboard purchase quick action opens purchase invoice form', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1600, 1000));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    await tester.tap(find.text('Purchase invoice'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New purchase invoice'), findsOneWidget);
+    expect(find.text('Invoice items'), findsOneWidget);
+  });
+
+  testWidgets('sidebar sections expand and collapse', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    expect(find.text('Sales invoices'), findsNothing);
+
+    await tester.tap(find.text('Finance').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Sales'), findsOneWidget);
+    expect(find.text('Sales invoices'), findsNothing);
+
+    await tester.tap(find.text('Sales').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Sales invoices'), findsOneWidget);
+
+    await tester.tap(find.text('Finance').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Sales invoices'), findsNothing);
+  });
+
+  testWidgets('accounting report rows respond to taps', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    await _tapSidebarItem(tester, 'Accounting');
+    await _tapSidebarItem(tester, 'Accounts');
+    expect(find.text('Trial balance'), findsWidgets);
+
+    await tester.tap(find.text('Trial balance').last);
+    await tester.pump();
+
+    expect(find.text('Trial balance is not available yet.'), findsOneWidget);
   });
 
   testWidgets('settings edits company identity and refreshes sidebar', (
@@ -232,21 +368,17 @@ void main() {
     await _completeBusinessSetup(tester);
     await _completeSetup(tester);
 
-    await tester.tap(find.text('Settings').first);
-    await tester.pumpAndSettle();
+    await _tapSidebarItem(tester, 'Settings');
 
-    expect(find.text('Company information'), findsOneWidget);
-    expect(find.text('Documents'), findsOneWidget);
-    expect(find.text('Payments'), findsOneWidget);
+    // The redesigned settings shows the grouped nav + company card.
+    expect(find.text('Company information'), findsWidgets);
+    expect(find.text('Roles & permissions'), findsOneWidget);
+    expect(find.text('Payment methods'), findsOneWidget);
 
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Business name'),
-      'New Style Shop',
-    );
-    final saveButton = find.widgetWithText(
-      FilledButton,
-      'Save company settings',
-    );
+    // The company form uses labels above each field, so the business name is
+    // the first text field in the form.
+    await tester.enterText(find.byType(TextFormField).first, 'New Style Shop');
+    final saveButton = find.widgetWithText(FilledButton, 'Save changes');
     await tester.ensureVisible(saveButton);
     await tester.tap(saveButton);
     await tester.pumpAndSettle();
@@ -254,19 +386,53 @@ void main() {
     expect(find.text('New Style Shop'), findsWidgets);
   });
 
+  testWidgets('roles screen creates a role shown in the user form', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    await _tapSidebarItem(tester, 'Settings');
+    await tester.tap(find.text('Roles & permissions'));
+    await tester.pumpAndSettle();
+
+    // Seeded roles are listed.
+    expect(find.text('Admin'), findsWidgets);
+
+    // Create a new role through the permissions matrix dialog.
+    await tester.tap(find.widgetWithText(FilledButton, 'Add role'));
+    await tester.pumpAndSettle();
+    expect(find.text('New role'), findsOneWidget);
+    // The role-name field is the first text field in the dialog.
+    await tester.enterText(find.byType(TextFormField).first, 'Supervisor');
+    await tester.pump();
+    final saveBtn = find.widgetWithText(FilledButton, 'Save permissions');
+    await tester.ensureVisible(saveBtn);
+    await tester.tap(saveBtn, warnIfMissed: true);
+    await tester.pumpAndSettle();
+    // Dialog closed and the new role appears in the list.
+    expect(find.text('New role'), findsNothing);
+    expect(find.text('Supervisor'), findsWidgets);
+  });
+
   testWidgets('completes a POS sale: open shift, add item, pay, receipt', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
-    await tester.pumpWidget(_bootstrap(products: const [_testProduct]));
+    await tester.pumpWidget(_bootstrap(products: [_testProduct]));
     await tester.pumpAndSettle();
 
     await _completeBusinessSetup(tester);
     await _completeSetup(tester);
 
     // Open the POS module.
-    await tester.tap(find.text('POS').first);
-    await tester.pumpAndSettle();
+    await _tapSidebarItem(tester, 'Finance');
+    await _tapSidebarItem(tester, 'Sales');
+    await _tapSidebarItem(tester, 'POS');
 
     // No open shift yet -> open-shift prompt.
     expect(find.text('Open a cashier shift'), findsOneWidget);
@@ -313,8 +479,8 @@ void main() {
     await _completeSetup(tester);
 
     // Open Inventory -> empty state.
-    await tester.tap(find.text('Inventory').first);
-    await tester.pumpAndSettle();
+    await _tapSidebarItem(tester, 'Inventory');
+    await _tapSidebarItem(tester, 'Items');
     expect(find.text('No products yet'), findsOneWidget);
 
     // Open the create form (use the empty-state button).
@@ -336,5 +502,203 @@ void main() {
 
     // Back on the list, the new product appears.
     expect(find.text('Coffee Mug'), findsOneWidget);
+  });
+
+  testWidgets('creates a customer from the Customers module', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    // Open Customers -> empty state.
+    await _tapSidebarItem(tester, 'Customers');
+    await _tapSidebarItem(tester, 'All customers');
+    expect(find.text('No customers yet'), findsOneWidget);
+
+    // Open the create form (use the empty-state button).
+    await tester.tap(find.widgetWithText(FilledButton, 'New customer').first);
+    await tester.pumpAndSettle();
+    expect(find.text('New customer'), findsWidgets);
+
+    // Fill the required fields (code is auto-suggested) and save.
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Name'),
+      'Cairo Trading Co.',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Create customer'));
+    await tester.pumpAndSettle();
+
+    // Back on the list, the new customer appears.
+    expect(find.text('Cairo Trading Co.'), findsOneWidget);
+  });
+
+  testWidgets('creates a supplier from the Suppliers module', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    await _tapSidebarItem(tester, 'Suppliers');
+    await _tapSidebarItem(tester, 'All suppliers');
+    expect(find.text('No suppliers yet'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'New supplier').first);
+    await tester.pumpAndSettle();
+    expect(find.text('New supplier'), findsWidgets);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Company name'),
+      'Nile Distributors',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Create supplier'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nile Distributors'), findsOneWidget);
+  });
+
+  testWidgets('creates a user from the Users module', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    await _tapSidebarItem(tester, 'Users');
+    await _tapSidebarItem(tester, 'All users');
+    expect(find.text('No additional users'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'New user').first);
+    await tester.pumpAndSettle();
+    expect(find.text('New user'), findsWidgets);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Full name'),
+      'Sara Hassan',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Username'),
+      'sara',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'secret123',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Create user'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sara Hassan'), findsOneWidget);
+  });
+
+  testWidgets('create sales invoice: add a product and save persists it', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1600, 1000));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    // Seed a product via the Inventory module — the invoice item picker reads
+    // the same ProductRepository.
+    await _tapSidebarItem(tester, 'Inventory');
+    await _tapSidebarItem(tester, 'Items');
+    await tester.tap(find.widgetWithText(FilledButton, 'New product').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Product name *'),
+      'Office Chair',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Selling price *'),
+      '250',
+    );
+    // Give it opening stock — the sales invoice picker only lists in-stock items.
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Opening stock'),
+      '5',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Create product'));
+    await tester.pumpAndSettle();
+    expect(find.text('Office Chair'), findsOneWidget);
+
+    // Open the new sales invoice screen from the dashboard quick action.
+    await _tapSidebarItem(tester, 'Dashboard');
+    await tester.tap(find.text('New sales invoice'));
+    await tester.pumpAndSettle();
+    expect(find.text('Invoice items'), findsOneWidget);
+    expect(find.text('No items added yet'), findsOneWidget);
+
+    // Add the product through the picker.
+    await tester.tap(find.widgetWithText(FilledButton, 'Add item'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add items'), findsOneWidget);
+    await tester.tap(find.text('Office Chair').last);
+    await tester.pumpAndSettle();
+
+    // The item is on the invoice and the empty-state message is gone.
+    expect(find.text('No items added yet'), findsNothing);
+    expect(find.text('Office Chair'), findsWidgets);
+
+    // Save persists the invoice and returns to the invoices list (on failure
+    // the screen stays on the create form with an error instead).
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Invoice items'), findsNothing);
+    expect(find.text('Sales invoices'), findsWidgets);
+  });
+
+  testWidgets('create purchase invoice: add a product and save persists it', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1600, 1000));
+    await tester.pumpWidget(_bootstrap());
+    await tester.pumpAndSettle();
+
+    await _completeBusinessSetup(tester);
+    await _completeSetup(tester);
+
+    // Seed a product so the purchase item picker has something to add.
+    await _tapSidebarItem(tester, 'Inventory');
+    await _tapSidebarItem(tester, 'Items');
+    await tester.tap(find.widgetWithText(FilledButton, 'New product').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Product name *'),
+      'Cotton Roll',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Selling price *'),
+      '90',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Create product'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cotton Roll'), findsOneWidget);
+
+    // Open the new purchase invoice screen from the dashboard quick action.
+    await _tapSidebarItem(tester, 'Dashboard');
+    await tester.tap(find.text('Purchase invoice'));
+    await tester.pumpAndSettle();
+    expect(find.text('New purchase invoice'), findsOneWidget);
+    expect(find.text('Invoice items'), findsOneWidget);
+
+    // Add the product through the picker.
+    await tester.tap(find.widgetWithText(FilledButton, 'Add item'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add items'), findsOneWidget);
+    await tester.tap(find.text('Cotton Roll').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Cotton Roll'), findsWidgets);
+
+    // Save persists the purchase invoice and returns to the list.
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').first);
+    await tester.pumpAndSettle();
+    expect(find.text('New purchase invoice'), findsNothing);
+    expect(find.text('Purchase invoices'), findsWidgets);
   });
 }

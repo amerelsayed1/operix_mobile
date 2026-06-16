@@ -1,4 +1,5 @@
 import '../domain/pos_models.dart';
+import '../domain/value_objects/money.dart';
 import 'pos_repository.dart';
 
 /// In-memory POS backend used when PostgreSQL is not configured. Starts with no
@@ -20,7 +21,8 @@ class DemoPosRepository implements PosRepository {
   bool get isPersistent => false;
 
   @override
-  Future<List<PosProduct>> loadProducts() async => List.unmodifiable(_products);
+  Future<List<PosProduct>> loadProducts() async =>
+      List.unmodifiable(_products.where((p) => p.quantityOnHand > 0));
 
   @override
   Future<PosShift?> activeShift(int cashierId) async {
@@ -34,7 +36,7 @@ class DemoPosRepository implements PosRepository {
   @override
   Future<PosShift> openShift({
     required AppUser cashier,
-    required double openingFloat,
+    required Money openingFloat,
   }) async {
     final shift = PosShift(
       id: _shiftSeq,
@@ -53,18 +55,18 @@ class DemoPosRepository implements PosRepository {
   @override
   Future<PosShift> closeShift({
     required PosShift shift,
-    required double countedCash,
+    required Money countedCash,
     String? notes,
   }) async {
-    final cashSales = _orders.fold<double>(
-      0,
-      (sum, order) =>
-          sum +
-          order.payments
-              .where((p) => p.method == PaymentMethod.cash)
-              .fold<double>(0, (s, p) => s + p.amount),
-    );
-    final expected = shift.openingFloat + cashSales;
+    var cashSales = Money.zero();
+    for (final order in _orders) {
+      for (final payment in order.payments.where(
+        (p) => p.method == PaymentMethod.cash,
+      )) {
+        cashSales = cashSales.add(payment.amount);
+      }
+    }
+    final expected = shift.openingFloat.add(cashSales);
     final closed = PosShift(
       id: shift.id,
       shiftNumber: shift.shiftNumber,
@@ -75,7 +77,7 @@ class DemoPosRepository implements PosRepository {
       openedAt: shift.openedAt,
       expectedCash: expected,
       countedCash: countedCash,
-      cashDifference: countedCash - expected,
+      cashDifference: countedCash.subtract(expected),
       closedAt: DateTime.now(),
       notes: notes,
     );

@@ -6,6 +6,7 @@ import '../../app/app_session.dart';
 import '../../app/operix_theme.dart';
 import '../../data/pos_repository.dart';
 import '../../domain/pos_models.dart';
+import '../../domain/value_objects/money.dart';
 
 /// Shown inside the POS workspace when the cashier has no open shift.
 class OpenShiftView extends StatefulWidget {
@@ -31,7 +32,9 @@ class _OpenShiftViewState extends State<OpenShiftView> {
     final user = session.user;
     if (user == null) return;
 
-    final openingFloat = double.tryParse(_floatController.text.trim()) ?? 0;
+    final openingFloat = Money.fromNum(
+      double.tryParse(_floatController.text.trim()) ?? 0,
+    );
     setState(() {
       _submitting = true;
       _error = null;
@@ -182,11 +185,12 @@ class _CloseShiftDialogState extends State<_CloseShiftDialog> {
   }
 
   Future<void> _close() async {
-    final counted = double.tryParse(_countedController.text.trim());
-    if (counted == null) {
+    final countedRaw = double.tryParse(_countedController.text.trim());
+    if (countedRaw == null) {
       setState(() => _error = 'Enter the counted cash amount.');
       return;
     }
+    final counted = Money.fromNum(countedRaw);
     setState(() {
       _submitting = true;
       _error = null;
@@ -224,7 +228,7 @@ class _CloseShiftDialogState extends State<_CloseShiftDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _row('Opening float', formatEgp(widget.shift.openingFloat)),
+            _row('Opening float', formatMoney(widget.shift.openingFloat)),
             const SizedBox(height: 16),
             TextField(
               controller: _countedController,
@@ -298,9 +302,9 @@ class _ResultDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final difference = shift.cashDifference ?? 0;
-    final balanced = difference.abs() < 0.005;
-    final over = difference > 0;
+    final difference = shift.cashDifference ?? Money.zero();
+    final balanced = difference.isZero;
+    final over = difference.isPositive;
     final diffColor = balanced
         ? OperixColors.success
         : over
@@ -309,8 +313,8 @@ class _ResultDialog extends StatelessWidget {
     final diffLabel = balanced
         ? 'Balanced'
         : over
-        ? 'Over by ${formatEgp(difference)}'
-        : 'Short by ${formatEgp(difference.abs())}';
+        ? 'Over by ${formatMoney(difference)}'
+        : 'Short by ${formatMoney(difference.abs())}';
 
     return AlertDialog(
       title: Text('Shift ${shift.shiftNumber} closed'),
@@ -320,9 +324,15 @@ class _ResultDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _row('Opening float', formatEgp(shift.openingFloat)),
-            _row('Expected cash', formatEgp(shift.expectedCash ?? 0)),
-            _row('Counted cash', formatEgp(shift.countedCash ?? 0)),
+            _row('Opening float', formatMoney(shift.openingFloat)),
+            _row(
+              'Expected cash',
+              formatMoney(shift.expectedCash ?? Money.zero()),
+            ),
+            _row(
+              'Counted cash',
+              formatMoney(shift.countedCash ?? Money.zero()),
+            ),
             const Divider(height: 24),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

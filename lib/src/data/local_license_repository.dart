@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import '../domain/license_models.dart';
 import '../licensing/license_codec.dart';
 import '../licensing/license_constants.dart';
@@ -25,6 +27,11 @@ class LocalLicenseRepository implements LicenseRepository {
       File(_join(_storageDirectory.path, 'installation.json'));
 
   File get _licenseFile => File(_join(_storageDirectory.path, 'license.json'));
+
+  /// Tracks the highest wall-clock time we've ever observed, so setting the OS
+  /// clock backwards can't revive an expired license (offline anti-rollback).
+  File get _stateFile =>
+      File(_join(_storageDirectory.path, 'license_state.json'));
 
   @override
   Future<String> installationId() async {
@@ -103,10 +110,47 @@ class LocalLicenseRepository implements LicenseRepository {
     return result;
   }
 
+  /// The highest UTC time we've recorded, or null if none yet.
+  Future<DateTime?> _readLastSeen() async {
+    try {
+      if (!await _stateFile.exists()) return null;
+      final decoded = jsonDecode(await _stateFile.readAsString());
+      if (decoded is Map && decoded['lastSeenAt'] is String) {
+        return DateTime.tryParse(decoded['lastSeenAt'] as String)?.toUtc();
+      }
+    } catch (_) {
+      // Treat unreadable state as "no record" — fail safe, not closed.
+    }
+    return null;
+  }
+
+  Future<void> _writeLastSeen(DateTime value) async {
+    try {
+      await _storageDirectory.create(recursive: true);
+      await _stateFile.writeAsString(
+        jsonEncode({'lastSeenAt': value.toUtc().toIso8601String()}),
+      );
+    } catch (_) {
+      // Best-effort; a failed write just means we don't advance the watermark.
+    }
+  }
+
   Future<LicenseValidationResult> _validateToken(
     String token, {
     required String installId,
   }) async {
+    // Fail closed in release builds still verifying with the insecure dev key —
+    // its private seed is public, so any license would be forgeable.
+    if (kReleaseMode && isUsingDevLicenseKey) {
+      return LicenseValidationResult(
+        status: LicenseStatus.invalid,
+        message:
+            'This build is not configured with a production license key. '
+            'Rebuild with --dart-define=OPERIX_LICENSE_PUBLIC_KEY=<key>.',
+        installationId: installId,
+      );
+    }
+
     final tokenValidation = await _codec.validate(token);
     if (!tokenValidation.isValid) {
       return LicenseValidationResult(
@@ -147,14 +191,43 @@ class LocalLicenseRepository implements LicenseRepository {
     }
 
     final now = _now();
-    if (now.isBefore(license.validFrom.toUtc())) {
+    final lastSeen = await _readLastSeen();
+
+    // Anti-rollback: if the clock has been moved meaningfully behind the highest
+    // time we've ever recorded, refuse to validate rather than let a rolled-back
+    // clock revive an expired license. A small tolerance absorbs normal drift.
+    const rollbackTolerance = Duration(minutes: 5);
+    if (lastSeen != null &&
+        now.isBefore(lastSeen.subtract(rollbackTolerance))) {
+      return LicenseValidationResult(
+        status: LicenseStatus.invalid,
+        message:
+            'The system clock appears to have been set backwards. Restore the '
+            'correct date and time to continue using Operix.',
+        installationId: installId,
+        license: license,
+      );
+    }
+
+    // Evaluate expiry against the furthest-forward time we trust, so a small
+    // (within-tolerance) rollback still can't un-expire a license.
+    final effectiveNow = (lastSeen != null && lastSeen.isAfter(now))
+        ? lastSeen
+        : now;
+
+    // Advance the watermark before returning (only ever moves forward).
+    if (lastSeen == null || now.isAfter(lastSeen)) {
+      await _writeLastSeen(now);
+    }
+
+    if (effectiveNow.isBefore(license.validFrom.toUtc())) {
       return LicenseValidationResult(
         status: LicenseStatus.notYetActive,
         message: 'License is not active until ${license.validFrom.toLocal()}.',
         installationId: installId,
       );
     }
-    if (now.isAfter(license.expiresAt.toUtc())) {
+    if (effectiveNow.isAfter(license.expiresAt.toUtc())) {
       return LicenseValidationResult(
         status: LicenseStatus.expired,
         message: 'License expired on ${license.expiresAt.toLocal()}.',

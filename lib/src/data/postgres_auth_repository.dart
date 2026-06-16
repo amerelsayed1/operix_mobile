@@ -128,4 +128,39 @@ class PostgresAuthRepository implements AuthRepository {
       role: row['role'] as String? ?? kAdminRole,
     );
   }
+
+  @override
+  Future<AppUser?> findUser(int id) async {
+    final Connection conn;
+    final Result result;
+    try {
+      conn = await database.connection();
+      result = await conn.execute(
+        Sql.named('''
+          SELECT id, username, full_name, role
+          FROM users
+          WHERE id = @id AND is_active = TRUE
+          LIMIT 1
+        '''),
+        parameters: {'id': id},
+      );
+    } catch (error) {
+      throw AuthException(
+        AuthFailure.connection,
+        'Could not reach the database: $error',
+      );
+    }
+
+    if (result.isEmpty) {
+      return null;
+    }
+
+    final row = result.first.toColumnMap();
+    return AppUser(
+      id: row['id'] as int,
+      username: row['username'] as String? ?? '',
+      fullName: row['full_name'] as String? ?? '',
+      role: row['role'] as String? ?? kAdminRole,
+    );
+  }
 }

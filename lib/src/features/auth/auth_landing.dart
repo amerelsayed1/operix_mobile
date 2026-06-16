@@ -107,7 +107,10 @@ class _ConnectionError extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     context.l10n.cannotReachDatabase,
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(

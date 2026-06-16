@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 12mm 12mm 10mm 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1f2933; font-size: 8.6px; line-height: 1.38;
+  }
+  .wrap { max-width: 186mm; margin: 0 auto; }
+
+  /* Header */
+  .head { display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 3px solid #1d4ed8; padding-bottom: 7px; margin-bottom: 9px; }
+  .head h1 { font-size: 17px; color: #0f172a; letter-spacing: -0.3px; }
+  .head .sub { color: #1d4ed8; font-weight: 700; font-size: 9px; margin-top: 2px; }
+  .head .meta { text-align: right; color: #64748b; font-size: 7.6px; line-height: 1.5; }
+  .badge { display:inline-block; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;
+    border-radius: 4px; padding: 1px 6px; font-weight:700; font-size:7.4px; }
+
+  /* Executive summary band */
+  .exec { background: #0f172a; color: #e2e8f0; border-radius: 7px; padding: 9px 12px; margin-bottom: 9px; }
+  .exec h2 { color:#fff; font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .exec ul { list-style: none; }
+  .exec li { padding-left: 14px; position: relative; margin-bottom: 3px; }
+  .exec li:before { content: "▸"; position:absolute; left:0; color:#60a5fa; }
+  .exec strong { color: #fff; }
+
+  /* Two-column body */
+  .cols { display: flex; gap: 10px; }
+  .col { flex: 1; }
+
+  h3 { font-size: 9px; color:#0f172a; text-transform: uppercase; letter-spacing: 0.6px;
+    border-left: 3px solid #1d4ed8; padding-left: 6px; margin: 9px 0 5px; }
+  .card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding: 7px 9px; margin-bottom: 7px; }
+  .card p { margin-bottom: 3px; }
+  .num { display:flex; gap:6px; margin-bottom:4px; }
+  .num .n { color:#1d4ed8; font-weight:800; }
+
+  /* Tables */
+  table { width:100%; border-collapse: collapse; margin-bottom: 4px; }
+  th { background:#1d4ed8; color:#fff; text-align:left; padding: 3px 5px; font-size:7.6px; font-weight:700; }
+  td { padding: 2.6px 5px; border-bottom:1px solid #e8edf3; font-size:7.8px; vertical-align: top; }
+  tr:nth-child(even) td { background:#f6f9fc; }
+  .yes { color:#15803d; font-weight:800; }
+  .no { color:#b91c1c; font-weight:800; }
+  .warn { color:#b45309; font-weight:800; }
+  .win { background:#dcfce7 !important; color:#166534; font-weight:700; }
+  .tie { color:#64748b; }
+
+  .snap td { font-size:7.8px; }
+  .snap td:first-child { color:#64748b; width: 34%; }
+  .snap td:last-child { font-weight:600; }
+
+  ul.tight { list-style:none; }
+  ul.tight li { padding-left: 12px; position:relative; margin-bottom: 3px; }
+  ul.tight li:before { content:"–"; position:absolute; left:2px; color:#1d4ed8; font-weight:800; }
+
+  .moat li:before { content:"✓"; color:#15803d; }
+  .threat li:before { content:"!"; color:#b45309; font-weight:800; }
+
+  .foot { margin-top: 8px; border-top:1px solid #e2e8f0; padding-top:5px;
+    color:#94a3b8; font-size: 6.8px; display:flex; justify-content:space-between; }
+  .kicker { background:#fef9c3; border:1px solid #fde68a; border-radius:6px; padding:6px 9px;
+    font-size:8px; margin-top: 2px; }
+  .kicker b { color:#854d0e; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div>
+      <h1>MyStock <span style="color:#94a3b8;font-weight:400;">vs</span> Operix</h1>
+      <div class="sub">Competitive Brief — Offline Desktop POS</div>
+    </div>
+    <div class="meta">
+      <span class="badge">INTERNAL</span><br>
+      Operix Market Research<br>
+      June 2026 · v1.0
+    </div>
+  </div>
+
+  <div class="exec">
+    <h2>Executive Summary</h2>
+    <ul>
+      <li>MyStock is <strong>not a SaaS competitor — it's a $69 one-time Flutter source-code template</strong> on CodeCanyon (7 sales, launched Apr 2026). It sells <em>code to developers</em>; Operix sells a <em>subscription to business owners</em>.</li>
+      <li>Its feature set nearly mirrors Operix's <strong>current desktop build</strong> — both Flutter offline POS with products, stock, shifts, customers, roles. On the pure POS axis, differentiation is thin.</li>
+      <li>Operix's moat lives one layer up: <strong>multi-tenant SaaS + GL/accounting + Arabic-first RTL + MENA tax compliance</strong> — things a $69 template structurally cannot reach.</li>
+    </ul>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT -->
+    <div class="col">
+      <h3>What MyStock Is</h3>
+      <table class="snap">
+        <tr><td>Product type</td><td>CodeCanyon source-code template (self-compile)</td></tr>
+        <tr><td>Tech stack</td><td>Flutter desktop · Windows-only · offline-first</td></tr>
+        <tr><td>Price</td><td>$69 regular license (one-time)</td></tr>
+        <tr><td>Traction</td><td>7 sales · updated Apr 9 2026 · unproven</td></tr>
+        <tr><td>Backend</td><td>Local/offline · LAN multi-PC</td></tr>
+        <tr><td>Buyer</td><td>Developers / resellers, not end-shops</td></tr>
+      </table>
+
+      <h3>Feature Comparison</h3>
+      <table>
+        <tr><th>Capability</th><th>MyStock</th><th>Operix</th></tr>
+        <tr><td>POS · barcode · receipts</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Product mgmt · bulk import</td><td class="yes">Yes</td><td class="warn">Partial</td></tr>
+        <tr><td>Stock · low-stock alerts</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Shifts · cash reconcile</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Customers · roles/RBAC</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Arabic-first RTL</td><td class="no">Generic</td><td class="win">Yes</td></tr>
+        <tr><td>General Ledger / accounting</td><td class="no">No</td><td class="win">Yes</td></tr>
+        <tr><td>AR/AP invoicing</td><td class="no">No</td><td class="win">Yes</td></tr>
+        <tr><td>Tax/VAT (ZATCA/ETA)</td><td class="no">No</td><td class="win">Roadmap</td></tr>
+        <tr><td>Multi-tenant SaaS / cloud</td><td class="no">No</td><td class="win">Yes</td></tr>
+        <tr><td>Suppliers / purchasing</td><td class="no">No</td><td class="win">Yes</td></tr>
+        <tr><td>Offline / no-internet</td><td class="win">Yes</td><td class="warn">Desktop only</td></tr>
+        <tr><td>One-time vs subscription</td><td class="win">One-time</td><td class="warn">Recurring</td></tr>
+      </table>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col">
+      <h3>Where MyStock Threatens</h3>
+      <ul class="tight threat">
+        <li><b>Offline argument.</b> Intermittent connectivity in EG/KSA makes "zero internet" genuinely attractive.</li>
+        <li><b>Price psychology.</b> "$69 once" beats "EGP 1,499/mo" as a first objection (real end-cost is higher).</li>
+        <li><b>Commoditization signal.</b> A $69 Flutter POS template proves the offline-POS layer is now a commodity.</li>
+      </ul>
+
+      <h3>Where MyStock Can't Follow</h3>
+      <ul class="tight moat">
+        <li>No accounting/GL, AR/AP, or tax compliance — can't become a compliant platform without becoming a different product.</li>
+        <li>No SaaS economics — no recurring revenue, central updates, multi-location, or sync. Each install is an island.</li>
+        <li>No true Arabic-first / MENA focus.</li>
+        <li>No vendor accountability — email-only support, no refunds post-download, no bug fixes via comments.</li>
+      </ul>
+
+      <h3>Recommendations</h3>
+      <div class="card">
+        <div class="num"><span class="n">1</span><span><b>Reframe vs the category, not MyStock.</b> "A cash register is a commodity. Running your whole business in Arabic isn't."</span></div>
+        <div class="num"><span class="n">2</span><span><b>Neutralize offline.</b> Market local-first Postgres as "works offline, syncs to cloud" — best of both.</span></div>
+        <div class="num"><span class="n">3</span><span><b>Counter one-time pricing</b> with TCO: template + developer + no updates + no compliance ≫ a subscription.</span></div>
+        <div class="num"><span class="n">4</span><span><b>Don't chase features.</b> POS already matches; invest the next cycle in GL depth, e-invoicing, multi-tenant cloud.</span></div>
+        <div class="num"><span class="n">5</span><span><b>Mine for UX only</b> — bulk import, low-stock alerts, shift reconciliation flows.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kicker">
+    <b>Strategic conclusion:</b> MyStock is built in Flutter — a direct mirror of Operix's desktop app. The offline-POS layer is already commodity-grade; the entire differentiation budget should go to the SaaS / GL / Arabic-compliance layer a $69 template can't reach.
+  </div>
+
+  <div class="foot">
+    <span>Confidence: feature/price High · UX unassessed (demo video not reviewed) · supplier/report depth Low (inferred from listing).</span>
+    <span>Sources: CodeCanyon #62520450 · Plugintify</span>
+  </div>
+
+</div>
+</body>
+</html>

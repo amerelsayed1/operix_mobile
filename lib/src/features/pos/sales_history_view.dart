@@ -184,7 +184,7 @@ class _OrderTile extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Text(
-              formatEgp(order.total),
+              formatMoney(order.total),
               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
             ),
       onTap: busy ? null : onTap,

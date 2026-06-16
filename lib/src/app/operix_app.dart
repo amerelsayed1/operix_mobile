@@ -33,7 +33,7 @@ class OperixApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: colorScheme,
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        fontFamily: 'Arial',
+        fontFamily: kOperixFontFamily,
         navigationRailTheme: NavigationRailThemeData(
           backgroundColor: const Color(0xFF0F172A),
           selectedIconTheme: const IconThemeData(color: Color(0xFF2DD4BF)),

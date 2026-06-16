@@ -1,6 +1,11 @@
 // Domain models for authentication, the point-of-sale flow, cashier shifts,
 // and receipts. Kept free of Flutter / database imports so they can be shared
 // across the UI, controllers, and repository implementations.
+//
+// Monetary fields use the [Money] value object (mirror of the cloud's
+// decimal(15,2) + bcmath) — never double — so totals match the cloud exactly.
+
+import 'value_objects/money.dart';
 
 /// A local application user that can sign in to the desktop client.
 class AppUser {
@@ -43,7 +48,7 @@ class PosProduct {
   final String sku;
   final String name;
   final String category;
-  final double unitPrice;
+  final Money unitPrice;
   final int quantityOnHand;
 
   bool get inStock => quantityOnHand > 0;
@@ -67,7 +72,7 @@ class CartLine {
   final PosProduct product;
   int quantity;
 
-  double get lineTotal => product.unitPrice * quantity;
+  Money get lineTotal => product.unitPrice.multiply(quantity).rounded();
 }
 
 /// Supported tender types.
@@ -106,7 +111,7 @@ class PosPayment {
   });
 
   final PaymentMethod method;
-  final double amount;
+  final Money amount;
   final String? label; // free text for custom methods
   final String? reference;
 
@@ -139,12 +144,12 @@ class CheckoutRequest {
   final PosShift shift;
   final List<CartLine> lines;
   final List<PosPayment> payments;
-  final double subtotal;
-  final double discount;
-  final double tax;
-  final double total;
-  final double paidAmount;
-  final double changeAmount;
+  final Money subtotal;
+  final Money discount;
+  final Money tax;
+  final Money total;
+  final Money paidAmount;
+  final Money changeAmount;
   final String? customerName;
 }
 
@@ -160,9 +165,9 @@ class ReceiptLine {
   final String name;
   final String sku;
   final int quantity;
-  final double unitPrice;
+  final Money unitPrice;
 
-  double get lineTotal => unitPrice * quantity;
+  Money get lineTotal => unitPrice.multiply(quantity).rounded();
 }
 
 /// A fully persisted order, used for the printable receipt preview.
@@ -189,12 +194,12 @@ class PosReceipt {
   final DateTime createdAt;
   final List<ReceiptLine> lines;
   final List<PosPayment> payments;
-  final double subtotal;
-  final double discount;
-  final double tax;
-  final double total;
-  final double paidAmount;
-  final double changeAmount;
+  final Money subtotal;
+  final Money discount;
+  final Money tax;
+  final Money total;
+  final Money paidAmount;
+  final Money changeAmount;
   final String? customerName;
 
   int get itemCount => lines.fold(0, (sum, line) => sum + line.quantity);
@@ -215,7 +220,7 @@ class PosOrderSummary {
   final int id;
   final String receiptNumber;
   final DateTime createdAt;
-  final double total;
+  final Money total;
   final int itemCount;
   final String paymentSummary;
   final String status;
@@ -243,12 +248,12 @@ class PosShift {
   final String shiftNumber;
   final int cashierId;
   final String cashierName;
-  final double openingFloat;
+  final Money openingFloat;
   final String status; // open | closed
   final DateTime openedAt;
-  final double? expectedCash;
-  final double? countedCash;
-  final double? cashDifference;
+  final Money? expectedCash;
+  final Money? countedCash;
+  final Money? cashDifference;
   final DateTime? closedAt;
   final String? notes;
 

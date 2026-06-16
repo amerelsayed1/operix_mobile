@@ -7,6 +7,7 @@ import '../../app/l10n_ext.dart';
 import '../../app/operix_theme.dart';
 import '../../data/pos_repository.dart';
 import '../../domain/pos_models.dart';
+import '../../domain/value_objects/money.dart';
 import 'payment_dialog.dart';
 import 'pos_controller.dart';
 import 'receipt_view.dart';
@@ -256,7 +257,9 @@ class _PosTerminalState extends State<PosTerminal> {
                         line: line,
                         onIncrement: () {
                           if (!controller.increment(line)) {
-                            _notify(context.l10n.noMoreStock(line.product.name));
+                            _notify(
+                              context.l10n.noMoreStock(line.product.name),
+                            );
                           }
                         },
                         onDecrement: () => controller.decrement(line),
@@ -287,7 +290,9 @@ class _PosTerminalState extends State<PosTerminal> {
               ),
               TextButton(
                 onPressed: () => _editDiscount(controller),
-                child: Text(controller.discount > 0 ? l10n.edit : l10n.addAction),
+                child: Text(
+                  controller.discount.isPositive ? l10n.edit : l10n.addAction,
+                ),
               ),
             ],
           ),
@@ -315,7 +320,7 @@ class _PosTerminalState extends State<PosTerminal> {
               label: Text(
                 _charging
                     ? l10n.saving
-                    : l10n.chargeAmount(formatEgp(controller.total)),
+                    : l10n.chargeAmount(formatMoney(controller.total)),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -330,8 +335,8 @@ class _PosTerminalState extends State<PosTerminal> {
 
   Future<void> _editDiscount(PosController controller) async {
     final textController = TextEditingController(
-      text: controller.discount > 0
-          ? controller.discount.toStringAsFixed(0)
+      text: controller.discount.isPositive
+          ? controller.discount.toStorageString()
           : '',
     );
     final value = await showDialog<double>(
@@ -366,10 +371,10 @@ class _PosTerminalState extends State<PosTerminal> {
         ],
       ),
     );
-    if (value != null) controller.setDiscount(value);
+    if (value != null) controller.setDiscount(Money.fromNum(value));
   }
 
-  Widget _amountRow(String label, double value, {bool strong = false}) {
+  Widget _amountRow(String label, Money value, {bool strong = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -384,7 +389,7 @@ class _PosTerminalState extends State<PosTerminal> {
             ),
           ),
           Text(
-            formatEgp(value),
+            formatMoney(value),
             style: TextStyle(
               fontSize: strong ? 20 : 14,
               fontWeight: FontWeight.w900,
@@ -453,7 +458,7 @@ class _ProductCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        formatEgp(product.unitPrice),
+                        formatMoney(product.unitPrice),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -535,7 +540,7 @@ class _CartRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  formatEgp(line.product.unitPrice),
+                  formatMoney(line.product.unitPrice),
                   style: const TextStyle(
                     color: OperixColors.muted,
                     fontSize: 12,
@@ -553,7 +558,7 @@ class _CartRow extends StatelessWidget {
           SizedBox(
             width: 78,
             child: Text(
-              formatEgp(line.lineTotal),
+              formatMoney(line.lineTotal),
               textAlign: TextAlign.end,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

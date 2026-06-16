@@ -50,13 +50,13 @@ class _SetupScreenState extends State<SetupScreen> {
 
     try {
       final user = await context.read<AuthRepository>().createFirstAdmin(
-            username: _usernameController.text,
-            fullName: _fullNameController.text,
-            password: _passwordController.text,
-          );
+        username: _usernameController.text,
+        fullName: _fullNameController.text,
+        password: _passwordController.text,
+      );
       if (!mounted) return;
       widget.onCreated?.call();
-      context.read<AppSession>().signIn(user);
+      await context.read<AppSession>().signIn(user);
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -85,9 +85,9 @@ class _SetupScreenState extends State<SetupScreen> {
               Text(
                 l10n.setupTitle,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: OperixColors.ink,
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: OperixColors.ink,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -104,8 +104,9 @@ class _SetupScreenState extends State<SetupScreen> {
                   prefixIcon: const Icon(Icons.badge_outlined),
                   border: const OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty) ? l10n.enterFullName : null,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? l10n.enterFullName
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -117,7 +118,9 @@ class _SetupScreenState extends State<SetupScreen> {
                   border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) return l10n.chooseUsername;
+                  if (value == null || value.trim().isEmpty) {
+                    return l10n.chooseUsername;
+                  }
                   if (value.trim().length < 3) return l10n.usernameMinChars;
                   return null;
                 },
@@ -133,13 +136,23 @@ class _SetupScreenState extends State<SetupScreen> {
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     tooltip: _obscure ? l10n.show : l10n.hide,
-                    icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return l10n.choosePassword;
-                  if (value.length < 6) return l10n.passwordMinChars;
+                  final pw = value ?? '';
+                  if (pw.isEmpty) return l10n.choosePassword;
+                  if (pw.length < 8) return l10n.passwordMinChars;
+                  final hasLetter = pw.contains(RegExp(r'[A-Za-z]'));
+                  final hasNumber = pw.contains(RegExp(r'[0-9]'));
+                  if (!hasLetter || !hasNumber) {
+                    return l10n.passwordNeedsLetterNumber;
+                  }
                   return null;
                 },
               ),
@@ -152,8 +165,9 @@ class _SetupScreenState extends State<SetupScreen> {
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: const OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    value != _passwordController.text ? l10n.passwordsDontMatch : null,
+                validator: (value) => value != _passwordController.text
+                    ? l10n.passwordsDontMatch
+                    : null,
                 onFieldSubmitted: (_) => _submit(),
               ),
               if (_error != null) ...[
@@ -169,10 +183,15 @@ class _SetupScreenState extends State<SetupScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Icon(Icons.person_add_alt),
-                  label: Text(_submitting ? l10n.creating : l10n.createAccountContinue),
+                  label: Text(
+                    _submitting ? l10n.creating : l10n.createAccountContinue,
+                  ),
                 ),
               ),
             ],

@@ -18,6 +18,50 @@ class AppLocalizationsAr extends AppLocalizations {
   String get save => 'حفظ';
 
   @override
+  String get onbBusinessHeadline => 'إعداد نشاطك التجاري';
+
+  @override
+  String get onbBusinessSubtitle =>
+      'أنشئ هوية الشركة المحلية المستخدمة في الشريط الجانبي والإيصالات ومستندات المبيعات والتقارير.';
+
+  @override
+  String get onbBusinessIdentity => 'هوية النشاط التجاري';
+
+  @override
+  String get onbBusinessIdentityHint =>
+      'هذا هو الاسم والشعار اللذان سيراهما العملاء.';
+
+  @override
+  String get onbBusinessNameLabel => 'اسم النشاط التجاري';
+
+  @override
+  String get onbBusinessNameRequired => 'أدخل اسم النشاط التجاري';
+
+  @override
+  String get onbBranchNameLabel => 'اسم الفرع';
+
+  @override
+  String get onbBranchNameRequired => 'أدخل اسم الفرع';
+
+  @override
+  String get onbLogoPathLabel => 'مسار شعار النشاط';
+
+  @override
+  String get onbLogoPathOptional =>
+      'اختياري. استخدم مسار صورة PNG أو JPG على هذا الجهاز.';
+
+  @override
+  String get onbSaving => 'جارٍ الحفظ…';
+
+  @override
+  String get onbSaveBusiness => 'حفظ هوية النشاط';
+
+  @override
+  String onbSaveError(Object error) {
+    return 'تعذّر حفظ ملف النشاط التجاري: $error';
+  }
+
+  @override
   String get delete => 'حذف';
 
   @override
@@ -139,7 +183,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get choosePassword => 'اختر كلمة مرور';
 
   @override
-  String get passwordMinChars => '6 أحرف على الأقل';
+  String get passwordMinChars => '8 أحرف على الأقل';
+
+  @override
+  String get passwordNeedsLetterNumber => 'استخدم أحرفًا وأرقامًا معًا';
 
   @override
   String get passwordsDontMatch => 'كلمتا المرور غير متطابقتين';
@@ -167,6 +214,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navSuppliers => 'الموردون';
+
+  @override
+  String get navReports => 'التقارير';
 
   @override
   String get navAccounting => 'المحاسبة';
@@ -584,4 +634,1081 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pickExisting => 'اختر موجودًا';
+
+  @override
+  String get phoneLabel => 'الهاتف';
+
+  @override
+  String get statusLabel => 'الحالة';
+
+  @override
+  String get statusActive => 'نشط';
+
+  @override
+  String get statusInactive => 'غير نشط';
+
+  @override
+  String get statusBlocked => 'محظور';
+
+  @override
+  String get codeRequired => 'الرمز مطلوب';
+
+  @override
+  String deleteConfirmName(Object name) {
+    return 'حذف \"$name\"؟ لا يمكن التراجع عن هذا الإجراء.';
+  }
+
+  @override
+  String get customersTitle => 'العملاء';
+
+  @override
+  String get searchCustomers => 'بحث عن العملاء…';
+
+  @override
+  String get newCustomer => 'عميل جديد';
+
+  @override
+  String get editCustomerTitle => 'تعديل العميل';
+
+  @override
+  String get noCustomersYet => 'لا يوجد عملاء بعد';
+
+  @override
+  String get noCustomersSubtitle => 'أضف أول عميل لتتبّع المبيعات والأرصدة.';
+
+  @override
+  String get noCustomersMatch => 'لا يوجد عملاء مطابقون لبحثك.';
+
+  @override
+  String get customerCreated => 'تم إنشاء العميل.';
+
+  @override
+  String get customerUpdated => 'تم تحديث العميل.';
+
+  @override
+  String get customerDeleted => 'تم حذف العميل.';
+
+  @override
+  String couldNotLoadCustomers(Object error) {
+    return 'تعذّر تحميل العملاء: $error';
+  }
+
+  @override
+  String get deleteCustomerTitle => 'حذف العميل';
+
+  @override
+  String get colCustomer => 'العميل';
+
+  @override
+  String get colPhone => 'الهاتف';
+
+  @override
+  String get colBalance => 'الرصيد';
+
+  @override
+  String get colStatus => 'الحالة';
+
+  @override
+  String get sectionCustomerDetails => 'بيانات العميل';
+
+  @override
+  String get customerNameLabel => 'الاسم';
+
+  @override
+  String get customerNameHint => 'مثل شركة القاهرة للتجارة';
+
+  @override
+  String get customerCodeLabel => 'رمز العميل';
+
+  @override
+  String get customerCodeHint => 'مثل CUST-0001';
+
+  @override
+  String get createCustomerAction => 'إنشاء العميل';
+
+  @override
+  String couldNotSaveCustomer(Object error) {
+    return 'تعذّر حفظ العميل: $error';
+  }
+
+  @override
+  String get suppliersTitle => 'الموردون';
+
+  @override
+  String get searchSuppliers => 'بحث عن الموردين…';
+
+  @override
+  String get newSupplier => 'مورد جديد';
+
+  @override
+  String get editSupplierTitle => 'تعديل المورد';
+
+  @override
+  String get noSuppliersYet => 'لا يوجد موردون بعد';
+
+  @override
+  String get noSuppliersSubtitle => 'أضف أول مورد لتتبّع المشتريات والمستحقات.';
+
+  @override
+  String get noSuppliersMatch => 'لا يوجد موردون مطابقون لبحثك.';
+
+  @override
+  String get supplierCreated => 'تم إنشاء المورد.';
+
+  @override
+  String get supplierUpdated => 'تم تحديث المورد.';
+
+  @override
+  String get supplierDeleted => 'تم حذف المورد.';
+
+  @override
+  String couldNotLoadSuppliers(Object error) {
+    return 'تعذّر تحميل الموردين: $error';
+  }
+
+  @override
+  String get deleteSupplierTitle => 'حذف المورد';
+
+  @override
+  String get colSupplier => 'المورد';
+
+  @override
+  String get colPayable => 'المستحق';
+
+  @override
+  String get sectionSupplierDetails => 'بيانات المورد';
+
+  @override
+  String get companyNameLabel => 'اسم الشركة';
+
+  @override
+  String get companyNameHint => 'مثل موزّعي النيل';
+
+  @override
+  String get companyNameRequired => 'اسم الشركة مطلوب';
+
+  @override
+  String get supplierCodeLabel => 'رمز المورد';
+
+  @override
+  String get supplierCodeHint => 'مثل SUP-0001';
+
+  @override
+  String get createSupplierAction => 'إنشاء المورد';
+
+  @override
+  String couldNotSaveSupplier(Object error) {
+    return 'تعذّر حفظ المورد: $error';
+  }
+
+  @override
+  String get usersTitle => 'المستخدمون';
+
+  @override
+  String get searchUsers => 'بحث عن المستخدمين…';
+
+  @override
+  String get newUser => 'مستخدم جديد';
+
+  @override
+  String get editUserTitle => 'تعديل المستخدم';
+
+  @override
+  String get noUsersYet => 'لا يوجد مستخدمون إضافيون';
+
+  @override
+  String get noUsersSubtitle =>
+      'أضف الكاشيرين والمديرين لمنحهم تسجيل دخول خاص بهم.';
+
+  @override
+  String get noUsersMatch => 'لا يوجد مستخدمون مطابقون لبحثك.';
+
+  @override
+  String get userCreated => 'تم إنشاء المستخدم.';
+
+  @override
+  String get userUpdated => 'تم تحديث المستخدم.';
+
+  @override
+  String get userDeleted => 'تم حذف المستخدم.';
+
+  @override
+  String couldNotLoadUsers(Object error) {
+    return 'تعذّر تحميل المستخدمين: $error';
+  }
+
+  @override
+  String get deleteUserTitle => 'حذف المستخدم';
+
+  @override
+  String get colUser => 'المستخدم';
+
+  @override
+  String get colRole => 'الدور';
+
+  @override
+  String get colLastLogin => 'آخر دخول';
+
+  @override
+  String get youPill => 'أنت';
+
+  @override
+  String get neverLoggedIn => 'أبداً';
+
+  @override
+  String get sectionUserDetails => 'بيانات المستخدم';
+
+  @override
+  String get userFullNameHint => 'مثل سارة حسن';
+
+  @override
+  String get fullNameRequired => 'الاسم الكامل مطلوب';
+
+  @override
+  String get usernameSignInHint => 'يُستخدم لتسجيل الدخول';
+
+  @override
+  String get usernameRequired => 'اسم المستخدم مطلوب';
+
+  @override
+  String get roleLabel => 'الدور';
+
+  @override
+  String get roleAdmin => 'مدير النظام';
+
+  @override
+  String get roleManager => 'مدير';
+
+  @override
+  String get roleCashier => 'كاشير';
+
+  @override
+  String get sectionAccess => 'الصلاحيات';
+
+  @override
+  String get newPasswordLabel => 'كلمة مرور جديدة';
+
+  @override
+  String get leaveBlankKeep => 'اتركها فارغة للإبقاء على الحالية';
+
+  @override
+  String get passwordRequired => 'كلمة المرور مطلوبة';
+
+  @override
+  String get useAtLeast6 => 'استخدم 6 أحرف على الأقل';
+
+  @override
+  String get inactiveCannotSignIn =>
+      'المستخدمون غير النشطين لا يمكنهم تسجيل الدخول.';
+
+  @override
+  String get createUserAction => 'إنشاء المستخدم';
+
+  @override
+  String couldNotSaveUser(Object error) {
+    return 'تعذّر حفظ المستخدم: $error';
+  }
+
+  @override
+  String get settingsGroupBusiness => 'الأعمال';
+
+  @override
+  String get settingsGroupDocuments => 'المستندات والطباعة';
+
+  @override
+  String get settingsGroupPos => 'نقطة البيع';
+
+  @override
+  String get settingsGroupProducts => 'المنتجات';
+
+  @override
+  String get navCompanyInfo => 'معلومات الشركة';
+
+  @override
+  String get navAccountingSettings => 'المحاسبة';
+
+  @override
+  String get navRolesPermissions => 'الأدوار والصلاحيات';
+
+  @override
+  String get navPaymentMethods => 'طرق الدفع';
+
+  @override
+  String get navCostCategories => 'تصنيفات التكاليف';
+
+  @override
+  String get navInvoiceSettings => 'إعدادات الفواتير';
+
+  @override
+  String get navPrintSettings => 'إعدادات الطباعة';
+
+  @override
+  String get navPrinters => 'الطابعات';
+
+  @override
+  String get navPosDevices => 'نقاط البيع';
+
+  @override
+  String get navItemCategories => 'تصنيفات الاصناف';
+
+  @override
+  String get navItemAttributes => 'خصائص الاصناف';
+
+  @override
+  String get navUnits => 'وحدات القياس';
+
+  @override
+  String get navTaxSettings => 'إعدادات الضرائب';
+
+  @override
+  String get comingSoonTitle => 'قريباً';
+
+  @override
+  String get comingSoonBody => 'سيتوفر هذا القسم من الإعدادات قريباً.';
+
+  @override
+  String get catSubtitle => 'نظّم منتجاتك في فئات.';
+
+  @override
+  String get catAdd => 'إضافة فئة';
+
+  @override
+  String get catEditTitle => 'تعديل الفئة';
+
+  @override
+  String get catSearchHint => 'ابحث في الفئات…';
+
+  @override
+  String get catColName => 'الاسم';
+
+  @override
+  String get catColProducts => 'المنتجات';
+
+  @override
+  String catProductCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count منتجات',
+      one: 'منتج واحد',
+      zero: 'لا منتجات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get catNameEn => 'الاسم (إنجليزي)';
+
+  @override
+  String get catNameAr => 'الاسم (عربي)';
+
+  @override
+  String get catNameHintEn => 'e.g. Beverages';
+
+  @override
+  String get catNameHintAr => 'مثال: مشروبات';
+
+  @override
+  String get catNameRequired => 'أدخل اسمًا بالإنجليزية أو العربية.';
+
+  @override
+  String get catEmpty => 'لا توجد فئات بعد. أضف أول فئة.';
+
+  @override
+  String get catCreated => 'تم إنشاء الفئة.';
+
+  @override
+  String get catUpdated => 'تم تحديث الفئة.';
+
+  @override
+  String get catDeleted => 'تم حذف الفئة.';
+
+  @override
+  String get catDeleteTitle => 'حذف الفئة';
+
+  @override
+  String catDeleteConfirm(Object name) {
+    return 'هل تريد حذف الفئة \"$name\"؟';
+  }
+
+  @override
+  String get unitSubtitle => 'حدّد وحدات بيع وتخزين المنتجات.';
+
+  @override
+  String get unitAdd => 'إضافة وحدة';
+
+  @override
+  String get unitEditTitle => 'تعديل الوحدة';
+
+  @override
+  String get unitColShortCode => 'الرمز المختصر';
+
+  @override
+  String get unitColDecimals => 'الكميات';
+
+  @override
+  String get unitColDefault => 'افتراضي';
+
+  @override
+  String get unitNameEn => 'الاسم (إنجليزي)';
+
+  @override
+  String get unitNameAr => 'الاسم (عربي)';
+
+  @override
+  String get unitNameHintEn => 'e.g. Piece, Box, Kilogram';
+
+  @override
+  String get unitNameHintAr => 'مثال: قطعة، صندوق، كيلوجرام';
+
+  @override
+  String get unitShortCodeLabel => 'الرمز المختصر';
+
+  @override
+  String get unitShortCodeHint => 'مثال: كجم، قطعة، صندوق';
+
+  @override
+  String get unitDescriptionLabel => 'الوصف';
+
+  @override
+  String get unitAllowDecimalLabel => 'الكميات';
+
+  @override
+  String get unitIntegerOnly => 'صحيحة (1، 2، 3)';
+
+  @override
+  String get unitDecimalAllowed => 'عشرية (1.5، 2.3)';
+
+  @override
+  String get unitNameRequired => 'أدخل اسمًا بالإنجليزية أو العربية.';
+
+  @override
+  String get unitEmpty => 'لا توجد وحدات بعد. أضف أول وحدة.';
+
+  @override
+  String get unitCreated => 'تم إنشاء الوحدة.';
+
+  @override
+  String get unitUpdated => 'تم تحديث الوحدة.';
+
+  @override
+  String get unitDeleted => 'تم حذف الوحدة.';
+
+  @override
+  String get unitSetDefault => 'تعيين كافتراضي';
+
+  @override
+  String get unitDefaultBadge => 'افتراضي';
+
+  @override
+  String unitDefaultSet(Object name) {
+    return 'أصبحت \"$name\" الوحدة الافتراضية.';
+  }
+
+  @override
+  String get unitDeleteTitle => 'حذف الوحدة';
+
+  @override
+  String unitDeleteConfirm(Object name) {
+    return 'هل تريد حذف الوحدة \"$name\"؟';
+  }
+
+  @override
+  String catalogLoadError(Object error) {
+    return 'تعذّر تحميل القائمة: $error';
+  }
+
+  @override
+  String catalogSaveError(Object error) {
+    return 'تعذّر الحفظ: $error';
+  }
+
+  @override
+  String get rolesSubtitle => 'إدارة الأدوار وصلاحياتها';
+
+  @override
+  String get addRole => 'إضافة دور';
+
+  @override
+  String get permissionsAction => 'الصلاحيات';
+
+  @override
+  String membersLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عضو',
+      one: 'عضو واحد',
+      zero: 'لا أعضاء',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get roleDeleteTitle => 'حذف الدور';
+
+  @override
+  String roleDeleteConfirm(Object name) {
+    return 'حذف الدور \"$name\"؟';
+  }
+
+  @override
+  String get roleCreated => 'تم إنشاء الدور.';
+
+  @override
+  String get roleUpdated => 'تم تحديث الدور.';
+
+  @override
+  String get roleDeleted => 'تم حذف الدور.';
+
+  @override
+  String couldNotLoadRoles(Object error) {
+    return 'تعذّر تحميل الأدوار: $error';
+  }
+
+  @override
+  String couldNotSaveRole(Object error) {
+    return 'تعذّر حفظ الدور: $error';
+  }
+
+  @override
+  String permissionsForRole(Object name) {
+    return 'صلاحيات — $name';
+  }
+
+  @override
+  String get newRoleTitle => 'دور جديد';
+
+  @override
+  String get permissionsDialogSubtitle =>
+      'حدد الإجراءات المسموح بها لهذا الدور';
+
+  @override
+  String get roleNameLabel => 'اسم الدور';
+
+  @override
+  String get roleNameHint => 'مثال: كاشير';
+
+  @override
+  String get roleNameRequired => 'اسم الدور مطلوب';
+
+  @override
+  String get descriptionLabel => 'الوصف';
+
+  @override
+  String get descriptionHint => 'الوصف';
+
+  @override
+  String get savePermissions => 'حفظ الصلاحيات';
+
+  @override
+  String actionsCount(int granted, int total) {
+    return '$granted / $total إجراءات';
+  }
+
+  @override
+  String modulesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count وحدات',
+      one: 'وحدة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get companyInfoSubtitle => 'مراجعة من إعدادات شركة Operix.';
+
+  @override
+  String get businessLogoLabel => 'شعار العمل';
+
+  @override
+  String get logoUploadHint =>
+      'اضغط لتغيير الشعار. الصيغ المقبولة: JPG, PNG, GIF (أقصى حجم 2 ميجابايت)';
+
+  @override
+  String get companySettingsNameLabel => 'الاسم';
+
+  @override
+  String get companySettingsNameRequired => 'الاسم مطلوب';
+
+  @override
+  String get emailLabel => 'البريد الإلكتروني';
+
+  @override
+  String get emailRequired => 'البريد الإلكتروني مطلوب';
+
+  @override
+  String get emailInvalid => 'أدخل بريدًا إلكترونيًا صالحًا';
+
+  @override
+  String get phoneFieldLabel => 'الهاتف';
+
+  @override
+  String get commercialRegLabel => 'رقم السجل التجاري';
+
+  @override
+  String get commercialRegHint => 'أدخل رقم السجل التجاري';
+
+  @override
+  String get cityLabel => 'المدينة';
+
+  @override
+  String get regionLabel => 'المنطقة / المحافظة';
+
+  @override
+  String get countryLabel => 'الدولة';
+
+  @override
+  String get postalCodeLabel => 'الرمز البريدي';
+
+  @override
+  String get postalCodeHint => 'أدخل الرمز البريدي';
+
+  @override
+  String get addressLabel => 'العنوان';
+
+  @override
+  String get companySettingsSaved => 'تم حفظ معلومات الشركة';
+
+  @override
+  String get logoPathDialogTitle => 'مسار صورة الشعار';
+
+  @override
+  String get accessDeniedTitle => 'غير مصرح بالوصول';
+
+  @override
+  String get accessDeniedBody => 'ليس لديك صلاحية لعرض هذا القسم.';
+
+  @override
+  String get cannotAssignAdminRole => 'يمكن لمسؤول النظام فقط إسناد دور نظامي.';
+
+  @override
+  String get navUsers => 'المستخدمون';
+
+  @override
+  String get account => 'الحساب';
+
+  @override
+  String get clientAccounts => 'حسابات العملاء';
+
+  @override
+  String get supplierAccounts => 'حسابات الموردين';
+
+  @override
+  String get searchProducts => 'ابحث عن المنتجات…';
+
+  @override
+  String get stockLog => 'سجل المخزون';
+
+  @override
+  String get stockAdjusted => 'تم تعديل المخزون.';
+
+  @override
+  String couldNotLoadProducts(Object error) {
+    return 'تعذّر تحميل المنتجات: $error';
+  }
+
+  @override
+  String get adjustStock => 'تعديل المخزون';
+
+  @override
+  String get noProductsMatch => 'لا توجد منتجات مطابقة لبحثك.';
+
+  @override
+  String get createFirstProductHint => 'أنشئ أول منتج لبدء البيع.';
+
+  @override
+  String get settingsDatabase => 'قاعدة البيانات';
+
+  @override
+  String get settingsDatabaseSubtitle =>
+      'اتصال PostgreSQL المحلي المستخدم في هذه المحطة.';
+
+  @override
+  String get settingsSource => 'المصدر';
+
+  @override
+  String get settingsDemoData => 'بيانات تجريبية';
+
+  @override
+  String get settingsTarget => 'الوجهة';
+
+  @override
+  String get settingsConfigured => 'مُهيأ';
+
+  @override
+  String get settingsYes => 'نعم';
+
+  @override
+  String get settingsNo => 'لا';
+
+  @override
+  String get settingsSslMode => 'وضع SSL';
+
+  @override
+  String get settingsLicense => 'الترخيص';
+
+  @override
+  String get settingsLicenseSubtitle => 'تفعيل المحطة دون اتصال.';
+
+  @override
+  String get settingsInstallationId => 'معرّف التثبيت';
+
+  @override
+  String get settingsLoading => 'جارٍ التحميل…';
+
+  @override
+  String get settingsStatus => 'الحالة';
+
+  @override
+  String get settingsLicensedBusiness => 'النشاط المُرخّص';
+
+  @override
+  String get settingsExpires => 'تنتهي في';
+
+  @override
+  String get currencyEgp => 'ج.م';
+
+  @override
+  String get dashOverviewTitle => 'نظرة عامة على أداء الأعمال';
+
+  @override
+  String get dashQuickActions => 'إجراءات سريعة';
+
+  @override
+  String get dashVsPreviousPeriod => 'مقارنة بالفترة السابقة';
+
+  @override
+  String get dashPeriodToday => 'اليوم';
+
+  @override
+  String get dashPeriodLast7 => 'آخر 7 أيام';
+
+  @override
+  String get dashPeriodThisMonth => 'هذا الشهر';
+
+  @override
+  String get dashPeriodCustom => 'مخصص';
+
+  @override
+  String get dashFrom => 'من';
+
+  @override
+  String get dashTo => 'إلى';
+
+  @override
+  String get dashPickDate => 'اختر تاريخاً';
+
+  @override
+  String get dashContactSales => 'تواصل مع المبيعات';
+
+  @override
+  String get dashContactSalesBody =>
+      'لتجديد الترخيص أو ترقية الباقة، تواصل مع فريق مبيعات Operix:\n\nsales@operixhq.com';
+
+  @override
+  String get dashCopyEmail => 'نسخ البريد';
+
+  @override
+  String get dashSalesEmailCopied => 'تم نسخ بريد المبيعات';
+
+  @override
+  String get dashOk => 'حسناً';
+
+  @override
+  String get dashLicenseExpiryAlert => 'تنبيه انتهاء الترخيص';
+
+  @override
+  String dashLicenseExpiryHeadline(int days, String business) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'متبقٍ $days يوماً على انتهاء ترخيص $business.',
+      many: 'متبقٍ $days يوماً على انتهاء ترخيص $business.',
+      few: 'متبقٍ $days أيام على انتهاء ترخيص $business.',
+      two: 'متبقٍ يومان على انتهاء ترخيص $business.',
+      one: 'متبقٍ يوم واحد على انتهاء ترخيص $business.',
+      zero: 'ينتهي ترخيص $business اليوم.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dashLicenseExpiryFooter(String date) {
+    return 'تاريخ الانتهاء: $date — جدّد الترخيص لتفادي توقف الخدمة.';
+  }
+
+  @override
+  String get dashManageLicense => 'إدارة الترخيص';
+
+  @override
+  String get dashActionNewSalesInvoice => 'فاتورة مبيعات جديدة';
+
+  @override
+  String get dashActionNewExpense => 'تكلفة جديدة';
+
+  @override
+  String get dashActionPurchaseInvoice => 'فاتورة شراء';
+
+  @override
+  String get dashActionSalesReturns => 'مرتجعات المبيعات';
+
+  @override
+  String get dashKpiRevenue => 'الإيرادات';
+
+  @override
+  String get dashKpiExpenses => 'التكاليف';
+
+  @override
+  String get dashKpiExpensesSubtitle => 'تكلفة البضاعة والمصروفات';
+
+  @override
+  String get dashKpiNetProfit => 'صافي الربح';
+
+  @override
+  String get dashKpiNetProfitSubtitle => 'بعد التكاليف';
+
+  @override
+  String get dashKpiCashBalance => 'الرصيد النقدي';
+
+  @override
+  String get dashKpiCashBalanceSubtitle => 'جميع الحسابات';
+
+  @override
+  String get dashSalesTrend => 'اتجاه المبيعات';
+
+  @override
+  String get dashSalesTrendSubtitle => 'صافي المبيعات خلال الفترة المحددة';
+
+  @override
+  String get dashRevenueDistribution => 'توزيع الإيرادات';
+
+  @override
+  String get dashRevenueDistributionSubtitle => 'كيف يتم توزيع الإيرادات';
+
+  @override
+  String get dashCogs => 'تكلفة البضاعة';
+
+  @override
+  String get dashNoSalesData => 'لا توجد بيانات مبيعات للفترة';
+
+  @override
+  String get dashTotalProfit => 'إجمالي الربح';
+
+  @override
+  String dashMarginLabel(String value) {
+    return 'الهامش $value%';
+  }
+
+  @override
+  String get dashGrossMargin => 'هامش الربح الإجمالي';
+
+  @override
+  String get dashInventoryValue => 'قيمة المخزون';
+
+  @override
+  String get dashAtCost => 'بالتكلفة';
+
+  @override
+  String get dashOrders => 'الطلبات';
+
+  @override
+  String dashAverageLabel(String value) {
+    return 'المتوسط: $value';
+  }
+
+  @override
+  String get dashNewCustomers => 'عملاء جدد';
+
+  @override
+  String get dashThisPeriod => 'هذه الفترة';
+
+  @override
+  String get dashSupplierDue => 'مستحقات الموردين';
+
+  @override
+  String get dashTotalDueAmount => 'إجمالي المبلغ المستحق';
+
+  @override
+  String get dashTopProducts => 'أعلى الأصناف مبيعاً';
+
+  @override
+  String dashPiecesLabel(int count) {
+    return '$count قطعة';
+  }
+
+  @override
+  String get dashInventoryHealthy => 'جميع الأصناف متوفرة بمخزون جيد';
+
+  @override
+  String dashInventoryLowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count صنف وصل حد إعادة الطلب',
+      many: '$count صنفاً وصل حد إعادة الطلب',
+      few: '$count أصناف وصلت حد إعادة الطلب',
+      two: 'صنفان وصلا حد إعادة الطلب',
+      one: 'صنف واحد وصل حد إعادة الطلب',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dashInventoryHealthyBody =>
+      'المخزون بحالة جيدة في جميع الأصناف المرتبطة بالمخزون';
+
+  @override
+  String get dashInventoryLowBody =>
+      'راجع شاشة المخزون لإعادة طلب الأصناف منخفضة الكمية';
+
+  @override
+  String get dashSalesInvoicesTitle => 'فواتير المبيعات';
+
+  @override
+  String get dashCreateInvoice => 'إنشاء فاتورة';
+
+  @override
+  String get dashFilters => 'الفلاتر';
+
+  @override
+  String get dashSearchInvoiceHint => 'بحث برقم الفاتورة أو العميل...';
+
+  @override
+  String get dashChooseCustomer => 'اختر العميل';
+
+  @override
+  String get dashCashCustomer => 'عميل نقدي';
+
+  @override
+  String get dashAddAtLeastOneItem =>
+      'أضف صنفاً واحداً على الأقل إلى الفاتورة.';
+
+  @override
+  String dashInvoiceCreated(String number) {
+    return 'تم إنشاء الفاتورة $number';
+  }
+
+  @override
+  String dashCouldNotSaveInvoice(Object error) {
+    return 'تعذّر حفظ الفاتورة: $error';
+  }
+
+  @override
+  String get dashNewSalesInvoiceTitle => 'فاتورة مبيعات جديدة';
+
+  @override
+  String get dashNewSalesInvoiceSubtitle =>
+      'إنشاء فاتورة رسمية لتجار الجملة أو الشركات.';
+
+  @override
+  String get dashBack => 'رجوع';
+
+  @override
+  String get dashInvoiceDateLabel => 'تاريخ الفاتورة *';
+
+  @override
+  String get dashDueDateLabel => 'تاريخ الاستحقاق';
+
+  @override
+  String get dashSelectDate => 'اختر تاريخاً';
+
+  @override
+  String get dashInvoiceNumberLabel => 'رقم الفاتورة';
+
+  @override
+  String get dashAutoGenerated => '# توليد تلقائي';
+
+  @override
+  String get dashInvoiceItems => 'عناصر الفاتورة';
+
+  @override
+  String get dashAddItem => 'إضافة صنف';
+
+  @override
+  String get dashColItem => 'الصنف';
+
+  @override
+  String get dashColPrice => 'السعر';
+
+  @override
+  String get dashColQty => 'الكمية';
+
+  @override
+  String get dashColTotal => 'الإجمالي';
+
+  @override
+  String dashVatLabel(String rate) {
+    return 'ضريبة القيمة المضافة ($rate%)';
+  }
+
+  @override
+  String get dashAddItems => 'إضافة أصناف';
+
+  @override
+  String get dashClose => 'إغلاق';
+
+  @override
+  String get dashSearchByNameOrSku => 'ابحث بالاسم أو رمز SKU...';
+
+  @override
+  String get dashNoItemsFound => 'لا توجد أصناف';
+
+  @override
+  String dashStockLabel(int count) {
+    return 'مخزون: $count';
+  }
+
+  @override
+  String get dashNoItemsAddedYet => 'لم تتم إضافة عناصر بعد';
+
+  @override
+  String get dashNoItemsAddedYetBody =>
+      'ابدأ ببناء فاتورتك عن طريق إضافة أصناف من مخزونك.';
+
+  @override
+  String get dashNotes => 'الملاحظات';
+
+  @override
+  String get dashNotesHint => 'أضف أي ملاحظات أو شروط للعميل...';
+
+  @override
+  String get dashChooseSupplier => 'اختر المورد';
+
+  @override
+  String get dashNoSupplier => 'بدون مورد';
+
+  @override
+  String get dashCashSupplier => 'مورد نقدي';
+
+  @override
+  String dashPurchaseInvoiceCreated(String number) {
+    return 'تم إنشاء فاتورة الشراء $number';
+  }
+
+  @override
+  String get dashNewPurchaseInvoiceTitle => 'فاتورة شراء جديدة';
+
+  @override
+  String get dashNewPurchaseInvoiceSubtitle =>
+      'إنشاء فاتورة للأصناف أو الخدمات المستلمة من المورد.';
+
+  @override
+  String get dashSupplierLabel => 'المورد';
+
+  @override
+  String get dashColPurchasePrice => 'سعر الشراء';
+
+  @override
+  String get dashColSalePrice => 'سعر البيع';
+
+  @override
+  String get dashNoItemsAdded =>
+      'لم تتم إضافة عناصر. استخدم البحث أعلاه لإضافة الأصناف.';
+
+  @override
+  String get dashNoItemsAddedBody =>
+      'استخدم زر \"إضافة عنصر\" أعلاه لإضافة الأصناف.';
 }

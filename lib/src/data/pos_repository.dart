@@ -1,4 +1,5 @@
 import '../domain/pos_models.dart';
+import '../domain/value_objects/money.dart';
 
 class PosException implements Exception {
   const PosException(this.message);
@@ -25,12 +26,12 @@ abstract interface class PosRepository {
 
   Future<PosShift> openShift({
     required AppUser cashier,
-    required double openingFloat,
+    required Money openingFloat,
   });
 
   Future<PosShift> closeShift({
     required PosShift shift,
-    required double countedCash,
+    required Money countedCash,
     String? notes,
   });
 

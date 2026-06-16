@@ -35,4 +35,8 @@ abstract interface class AuthRepository {
 
   /// Returns the authenticated user, or throws [AuthException] on failure.
   Future<AppUser> login(String username, String password);
+
+  /// Looks up an active user by id, used to restore a persisted session on
+  /// startup. Returns null if the user no longer exists or is inactive.
+  Future<AppUser?> findUser(int id);
 }

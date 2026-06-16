@@ -43,11 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await context.read<AuthRepository>().login(
-            _usernameController.text,
-            _passwordController.text,
-          );
+        _usernameController.text,
+        _passwordController.text,
+      );
       if (!mounted) return;
-      context.read<AppSession>().signIn(user);
+      await context.read<AppSession>().signIn(user);
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -76,9 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 l10n.signIn,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: OperixColors.ink,
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: OperixColors.ink,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -95,8 +95,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: const Icon(Icons.person_outline),
                   border: const OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty) ? l10n.enterUsername : null,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? l10n.enterUsername
+                    : null,
                 onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
               ),
               const SizedBox(height: 18),
@@ -110,12 +111,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     tooltip: _obscure ? l10n.show : l10n.hide,
-                    icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
-                validator: (value) =>
-                    (value == null || value.isEmpty) ? l10n.enterPassword : null,
+                validator: (value) => (value == null || value.isEmpty)
+                    ? l10n.enterPassword
+                    : null,
                 onFieldSubmitted: (_) => _submit(),
               ),
               if (_error != null) ...[
@@ -131,7 +137,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Icon(Icons.login),
                   label: Text(_submitting ? l10n.signingIn : l10n.signIn),

@@ -8,6 +8,8 @@ import '../../app/operix_theme.dart';
 import '../../data/business_repository.dart';
 import '../../domain/business_profile.dart';
 import '../../domain/pos_models.dart';
+import '../../domain/value_objects/money.dart';
+import 'return_dialog.dart';
 
 /// A compact, thermal-receipt-style preview of a persisted order.
 class ReceiptCard extends StatelessWidget {
@@ -73,8 +75,9 @@ class ReceiptCard extends StatelessWidget {
             _dashed(),
             const SizedBox(height: 8),
             _amount('Subtotal', receipt.subtotal),
-            if (receipt.discount > 0) _amount('Discount', -receipt.discount),
-            if (receipt.tax > 0) _amount('Tax', receipt.tax),
+            if (receipt.discount.isPositive)
+              _amount('Discount', -receipt.discount),
+            if (receipt.tax.isPositive) _amount('Tax', receipt.tax),
             const SizedBox(height: 4),
             _amount('TOTAL', receipt.total, strong: true),
             const SizedBox(height: 8),
@@ -82,7 +85,7 @@ class ReceiptCard extends StatelessWidget {
             const SizedBox(height: 8),
             for (final payment in receipt.payments)
               _amount(payment.displayLabel, payment.amount),
-            if (receipt.changeAmount > 0)
+            if (receipt.changeAmount.isPositive)
               _amount('Change', receipt.changeAmount),
             const SizedBox(height: 14),
             const Center(child: Text('Thank you for your purchase!')),
@@ -105,7 +108,7 @@ class ReceiptCard extends StatelessWidget {
     );
   }
 
-  Widget _amount(String label, double value, {bool strong = false}) {
+  Widget _amount(String label, Money value, {bool strong = false}) {
     final style = TextStyle(
       fontFamily: 'monospace',
       fontSize: strong ? 15 : 13,
@@ -116,7 +119,7 @@ class ReceiptCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(label, style: style)),
-          Text(formatEgp(value), style: style),
+          Text(formatMoney(value), style: style),
         ],
       ),
     );
@@ -173,11 +176,11 @@ class _ReceiptLineRow extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '  ${line.quantity} x ${formatEgp(line.unitPrice)}',
+                  '  ${line.quantity} x ${formatMoney(line.unitPrice)}',
                   style: const TextStyle(color: OperixColors.muted),
                 ),
               ),
-              Text(formatEgp(line.lineTotal)),
+              Text(formatMoney(line.lineTotal)),
             ],
           ),
         ],
@@ -209,10 +212,40 @@ Future<void> showReceiptDialog(BuildContext context, PosReceipt receipt) {
               },
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.check),
-              label: const Text('Done'),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    final summary = await showReturnDialog(
+                      context,
+                      orderId: receipt.id,
+                    );
+                    if (summary != null && context.mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Return ${summary.returnNumber} processed — '
+                            'refund ${formatMoney(summary.totalAmount)}.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.assignment_return_outlined),
+                  label: const Text('Return items'),
+                ),
+                const SizedBox(width: 10),
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Done'),
+                ),
+              ],
             ),
           ],
         ),

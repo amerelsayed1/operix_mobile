@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Finance Review — Sales &amp; Purchase Invoices</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 40px; }
+  .cover { text-align: center; padding: 60px 0 40px; border-bottom: 3px solid #6366F1; margin-bottom: 40px; }
+  .cover h1 { font-size: 28px; font-weight: 800; color: #6366F1; margin-bottom: 8px; }
+  .cover .subtitle { font-size: 15px; color: #64748B; }
+  .cover .meta { margin-top: 20px; font-size: 12px; color: #94A3B8; }
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; }
+  .badge.ok { background: #DCFCE7; color: #166534; }
+  .badge.risk { background: #FEF9C3; color: #854D0E; }
+  .badge.wrong { background: #FEE2E2; color: #991B1B; }
+  .badge.missing { background: #EDE9FE; color: #5B21B6; }
+  .section { margin-bottom: 32px; }
+  .section h2 { font-size: 16px; font-weight: 700; color: #1E293B; padding-bottom: 8px; border-bottom: 1px solid #E2E8F0; margin-bottom: 14px; }
+  .section h3 { font-size: 13px; font-weight: 700; color: #475569; margin: 14px 0 6px; }
+  .finding { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .finding.wrong { border-left: 4px solid #EF4444; }
+  .finding.risk { border-left: 4px solid #F59E0B; }
+  .finding.ok { border-left: 4px solid #10B981; }
+  .finding.missing { border-left: 4px solid #8B5CF6; }
+  .finding h3 { margin: 0; }
+  .finding p { line-height: 1.6; color: #374151; margin-top: 6px; }
+  .recommendation { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; padding: 14px 16px; margin-top: 16px; }
+  .recommendation h3 { color: #4338CA; margin: 0 0 6px; }
+  .recommendation p { color: #3730A3; line-height: 1.6; }
+  .code { font-family: monospace; background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #7C3AED; }
+  pre { background: #0F172A; color: #E2E8F0; border-radius: 8px; padding: 14px 16px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 10px 0; }
+  pre .c { color: #64748B; }
+  pre .g { color: #4ADE80; }
+  pre .r { color: #F87171; }
+  .summary-table, .ledger-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .summary-table th { background: #F1F5F9; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-table td { padding: 10px 14px; border-bottom: 1px solid #F1F5F9; vertical-align: top; }
+  .ledger-table th { background: #1E293B; color: #fff; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; }
+  .ledger-table td { padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-family: monospace; font-size: 12px; }
+  .ledger-table tr:nth-child(even) td { background: #F8FAFC; }
+  .num { text-align: right; }
+  .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #E2E8F0; text-align: center; font-size: 11px; color: #94A3B8; }
+  @media print { body { padding: 20px; } pre { background: #0F172A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .ledger-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Financial Review Report</h1>
+  <div class="subtitle">Sales Invoice &amp; Purchase Invoice — Accounting Correctness</div>
+  <div class="meta">
+    Project: Operix (Flutter Desktop, PostgreSQL) &nbsp;|&nbsp; Date: 2026-06-16 &nbsp;|&nbsp; Reviewed by: Senior Finance Consultant (AI)
+  </div>
+</div>
+
+<!-- Executive Summary -->
+<div class="section">
+  <h2>Executive Summary</h2>
+  <p style="line-height:1.6;color:#374151;margin-bottom:6px;">
+    The double-entry <em>mechanics</em> are sound — every sales and purchase invoice posts a balanced journal entry, account resolution fails loudly, and headers/lines/stock/GL are wrapped in one transaction. However, there is <strong>one structural defect</strong> that silently corrupts both the Balance Sheet and the P&amp;L on every sale once purchase prices vary: <strong>inventory is capitalized at actual cost but relieved at "latest cost."</strong> Several supporting gaps compound the risk.
+  </p>
+  <table class="summary-table">
+    <thead><tr><th>Area</th><th>Verdict</th><th>Priority</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Double-entry balance (per invoice)</td><td><span class="badge ok">✅ Correct</span></td><td>—</td><td>Debits = Credits on both invoice types.</td></tr>
+      <tr><td><strong>Inventory costing / COGS basis</strong></td><td><span class="badge wrong">❌ Wrong</span></td><td>Critical</td><td>Latest-cost overwrite — not IAS 2; Inventory &amp; COGS never reconcile, Inventory can go negative.</td></tr>
+      <tr><td>POS sales → GL posting</td><td><span class="badge missing">🔍 Not Implemented</span></td><td>Critical</td><td>POS checkout posts NO journal entry. Revenue, VAT, COGS all missing from books.</td></tr>
+      <tr><td>Invoice numbering (gapless)</td><td><span class="badge risk">⚠️ Risk</span></td><td>High</td><td><span class="code">nextval</span> consumed before rollback → sequence gaps. ETA/ZATCA require gapless.</td></tr>
+      <tr><td>Sales / purchase returns GL</td><td><span class="badge missing">🔍 Not Implemented</span></td><td>High</td><td>Tables exist; no reversing journal posted. Revenue/COGS left overstated.</td></tr>
+      <tr><td>GL balance enforcement (DB)</td><td><span class="badge risk">⚠️ Risk</span></td><td>Medium</td><td>No trigger asserts Σdebit = Σcredit; relies on app arithmetic only.</td></tr>
+      <tr><td>Tax model flexibility</td><td><span class="badge risk">⚠️ Risk</span></td><td>Medium</td><td>Hardcoded 14%, single mixed Tax-Payable account, no zero-rated/exempt, no discounts.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Detailed Findings -->
+<div class="section">
+  <h2>Detailed Findings</h2>
+
+  <div class="finding wrong">
+    <h3><span class="badge wrong">❌ Wrong</span> &nbsp;THE BIG ISSUE — Inventory capitalized at actual cost, relieved at "latest cost"</h3>
+    <p>
+      Purchase invoices debit Inventory at the <strong>actual</strong> purchase cost
+      (<span class="code">postLine('1300','debit', subtotal)</span>,
+      <span class="code">postgres_purchase_invoice_repository.dart:160</span>) and then <strong>overwrite</strong> the product's cost with the latest purchase price
+      (<span class="code">cost_price = @unit_price</span>, <span class="code">postgres_purchase_invoice_repository.dart:79</span>) — there is <strong>no weighted-average or FIFO calculation anywhere in the codebase</strong> (verified by full-repo grep).
+    </p>
+    <p>
+      Sales invoices then relieve Inventory / charge COGS at <em>quantity × current</em> <span class="code">cost_price</span>
+      (<span class="code">cogs = Σ costPrice × qty</span>, <span class="code">sales_invoice_models.dart:49</span>;
+      posted at <span class="code">postgres_sales_invoice_repository.dart:166</span>).
+    </p>
+    <p>
+      Because the cost that goes <em>in</em> (actual) differs from the cost that comes <em>out</em> (latest), the Inventory control account (1300) drifts from physical reality, COGS is misstated every period, and <strong>Inventory can go negative even when stock is physically positive.</strong> Latest-cost valuation is <strong>not permitted under IAS&nbsp;2</strong> (only FIFO or weighted average).
+    </p>
+    <h3 style="margin-top:14px;">Worked proof (EGP)</h3>
+    <table class="ledger-table">
+      <thead><tr><th>Step</th><th>Action</th><th class="num">Dr Inventory</th><th class="num">Cr Inventory (COGS)</th><th class="num">Inventory GL bal.</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Buy 10 @ 10</td><td class="num">100.00</td><td class="num">—</td><td class="num">100.00</td></tr>
+        <tr><td>2</td><td>Buy 10 @ 20 (cost_price → 20)</td><td class="num">200.00</td><td class="num">—</td><td class="num">300.00</td></tr>
+        <tr><td>3</td><td>Sell all 20 @ cost 20 each</td><td class="num">—</td><td class="num">400.00</td><td class="num" style="color:#DC2626;font-weight:700;">−100.00</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Cost in = 300; cost out = 400. <strong>COGS overstated by 100, gross profit understated by 100, Inventory ends at −100 instead of 0.</strong> The Inventory account can never tie to a physical count.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — Critical</h3>
+      <p>
+        Adopt <strong>moving weighted average</strong> consistently. On purchase, replace the overwrite with:
+        <span class="code">new_cost = (qoh*cost_price + qty*unit_price) / (qoh + qty)</span>, and relieve COGS at that same <span class="code">cost_price</span> at sale time. Capitalize the <em>same</em> basis you relieve. (FIFO is the alternative but needs explicit cost layers.) Add a periodic reconciliation report: Inventory GL (1300) vs. Σ(qoh × cost_price).
+      </p>
+    </div>
+  </div>
+
+  <div class="finding missing">
+    <h3><span class="badge missing">🔍 Not Implemented</span> &nbsp;POS sales post nothing to the General Ledger</h3>
+    <p>
+      <span class="code">postgres_pos_repository.dart</span> checkout relieves stock and records movements but writes <strong>zero</strong> journal entries — no Revenue (4100), no Tax Payable (2200), no COGS (5100)/Inventory (1300). For a POS-first product, the primary sales channel is invisible to the ledger; revenue, output VAT and COGS are absent from the books. Same posting gap as the sales-invoice path, arguably higher impact by volume.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — Critical</h3>
+      <p>Post the same balanced revenue + COGS journal on POS checkout (cash/card debit instead of A/R). Reuse the sales-invoice posting routine. Tie the day's POS revenue to the shift reconciliation and the cash GL account.</p>
+    </div>
+  </div>
+
+  <div class="finding risk">
+    <h3><span class="badge risk">⚠️ Risk</span> &nbsp;Invoice numbering can have gaps (legal/compliance)</h3>
+    <p>
+      Numbers come from <span class="code">nextval('sales_invoice_seq')</span> (<span class="code">postgres_sales_invoice_repository.dart:31</span>) <em>inside</em> the transaction, but the stock guard throws and rolls back <em>after</em> the number is already consumed (<span class="code">:85–89</span>). PostgreSQL sequences are non-transactional, so every failed posting burns a number → <strong>permanent gaps</strong>. Egypt ETA and Saudi ZATCA both mandate gapless sequential invoice numbering.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — High</h3>
+      <p>Validate stock and all preconditions <em>before</em> drawing the invoice number, or allocate the number from a gap-tolerant ledger table updated within the transaction. Reconcile issued numbers for gaps as a control report.</p>
+    </div>
+  </div>
+
+  <div class="finding missing">
+    <h3><span class="badge missing">🔍 Not Implemented</span> &nbsp;Sales / purchase returns have no GL reversal</h3>
+    <p>
+      The <span class="code">sales_returns</span> table exists (migration 006) and returns restock physically, but no repository posts a reversing journal (Dr Revenue + Dr Tax / Cr A/R or Cash, and Cr COGS / Dr Inventory). Revenue, output VAT and COGS remain overstated after a refund.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — High</h3>
+      <p>Post a credit-note journal on every return that references the original invoice number, reversing revenue, tax, and COGS at the original cost basis.</p>
+    </div>
+  </div>
+
+  <div class="finding risk">
+    <h3><span class="badge risk">⚠️ Risk</span> &nbsp;No database-level balance enforcement</h3>
+    <p>
+      The GL schema (<span class="code">004_gl_schema.sql</span>) has no trigger asserting Σdebit = Σcredit per <span class="code">journal_entry</span>. Balance depends entirely on app arithmetic, and <span class="code">postLine</span> silently skips any non-positive amount (<span class="code">if (!amount.isPositive) return;</span>) — a single bad input could post a one-sided entry that the DB would accept.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — Medium</h3>
+      <p>Add a deferred constraint trigger that rejects any journal entry whose debit and credit totals differ. This is the cheap insurance every accounting core should carry.</p>
+    </div>
+  </div>
+
+  <div class="finding risk">
+    <h3><span class="badge risk">⚠️ Risk</span> &nbsp;Tax model is rigid and mixes input/output VAT</h3>
+    <p>
+      Tax rate is hardcoded to 14% (<span class="code">sales_invoice_models.dart:31</span>), exclusive-only, with a single <span class="code">2200 Tax Payable</span> account carrying <strong>both</strong> output VAT (sales credit) and input VAT (purchase debit). There is no zero-rated vs. exempt distinction, no line-level tax, and no discount field on the invoice at all. Workable for a single-rate Egypt MVP; blocks UAE/Saudi multi-rate and mixed-supply invoices.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — Medium</h3>
+      <p>Separate Output VAT (2200, liability) from Input VAT (e.g. 1400, recoverable asset); drive the rate from a tax table; support zero-rated/exempt flags and invoice discounts. Add a recoverable/non-recoverable flag on purchase input VAT.</p>
+    </div>
+  </div>
+
+  <div class="finding ok">
+    <h3><span class="badge ok">✅ Correct</span> &nbsp;Double-entry balance and transactional integrity</h3>
+    <p>
+      Both invoice types post mathematically balanced entries (Sales: Dr A/R total = Cr Revenue subtotal + Cr Tax + the COGS pair nets to zero; Purchase: Dr Inventory + Dr Tax = Cr A/P total). Account codes are resolved up front and fail loudly if misconfigured, and header + lines + stock + GL share one <span class="code">runTx</span>. The <span class="code">Money</span> value object uses 6-decimal intermediate precision rounding to 2-decimal storage. Mechanics are good — the defect is the cost <em>basis</em>, not the bookkeeping.</p>
+  </div>
+</div>
+
+<!-- Gap Analysis -->
+<div class="section">
+  <h2>Operix Gap Analysis (invoice-relevant rows)</h2>
+  <table class="summary-table">
+    <thead><tr><th>#</th><th>Area</th><th>Check</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>AR</td><td>Journal entry on sales invoice creation</td><td><span class="badge ok">✅ Implemented</span></td></tr>
+      <tr><td>5</td><td>AP</td><td>Journal entry on purchase invoice</td><td><span class="badge ok">✅ Implemented</span></td></tr>
+      <tr><td>28</td><td>COGS</td><td>Perpetual COGS posting on sale</td><td><span class="badge risk">⚠️ Partial — wrong cost basis</span></td></tr>
+      <tr><td>11</td><td>Inventory</td><td>FIFO / Weighted-average cost tracking</td><td><span class="badge wrong">❌ Missing — latest-cost only</span></td></tr>
+      <tr><td>12</td><td>Inventory</td><td>Negative stock blocked</td><td><span class="badge ok">✅ Physical qty guarded</span> <span class="badge wrong">❌ GL inventory can go negative</span></td></tr>
+      <tr><td>3</td><td>AR</td><td>Credit note / return reduces AR &amp; tax</td><td><span class="badge missing">🔍 Not Implemented</span></td></tr>
+      <tr><td>7</td><td>AP</td><td>Debit note reduces AP &amp; inventory</td><td><span class="badge missing">🔍 Not Implemented</span></td></tr>
+      <tr><td>30</td><td>Audit</td><td>Invoice sequential numbering enforced (gapless)</td><td><span class="badge risk">⚠️ Gaps on rollback</span></td></tr>
+      <tr><td>29</td><td>Audit</td><td>Every transaction has a journal entry</td><td><span class="badge wrong">❌ POS sales post none</span></td></tr>
+      <tr><td>21</td><td>Reports</td><td>Balance Sheet always balances</td><td><span class="badge risk">⚠️ Inventory drift breaks tie-out</span></td></tr>
+      <tr><td>8</td><td>Tax</td><td>Input vs output VAT separated</td><td><span class="badge risk">⚠️ Single mixed account</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Recommendations -->
+<div class="section">
+  <h2>Prioritized Recommendations</h2>
+  <table class="summary-table">
+    <thead><tr><th>Priority</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Critical</strong></td><td>Replace latest-cost overwrite with <strong>moving weighted average</strong>; relieve COGS at the same basis. Add Inventory-GL vs. on-hand reconciliation report.</td></tr>
+      <tr><td><strong>Critical</strong></td><td>Post balanced Revenue + Tax + COGS journals on <strong>POS checkout</strong>.</td></tr>
+      <tr><td><strong>High</strong></td><td>Make invoice numbering <strong>gapless</strong> — validate before allocating the number.</td></tr>
+      <tr><td><strong>High</strong></td><td>Implement <strong>return/credit-note GL reversal</strong> referencing the original invoice.</td></tr>
+      <tr><td><strong>Medium</strong></td><td>Add DB <strong>balance trigger</strong> (Σdebit = Σcredit per entry).</td></tr>
+      <tr><td><strong>Medium</strong></td><td>Generalize tax: rate table, <strong>separate input/output VAT</strong>, zero-rated/exempt, invoice discounts.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Operix Finance Review &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; Generated 2026-06-16
+</div>
+</body>
+</html>

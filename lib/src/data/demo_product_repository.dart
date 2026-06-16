@@ -10,11 +10,13 @@ class DemoProductRepository implements ProductRepository {
   Future<List<Product>> list({
     String search = '',
     bool includeInactive = true,
+    bool inStockOnly = false,
   }) async {
     final q = search.trim().toLowerCase();
     final filtered =
         _products.where((p) {
           if (!includeInactive && !p.isActive) return false;
+          if (inStockOnly && p.quantityOnHand <= 0) return false;
           if (q.isEmpty) return true;
           return p.name.toLowerCase().contains(q) ||
               p.sku.toLowerCase().contains(q) ||

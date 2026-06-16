@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../app/l10n_ext.dart';
 import '../../app/operix_theme.dart';
 import '../../domain/pos_models.dart';
+import '../../domain/value_objects/money.dart';
 
 /// Result returned from [showPaymentDialog].
 class PaymentOutcome {
@@ -13,21 +14,27 @@ class PaymentOutcome {
     required this.changeAmount,
   });
 
-  /// Tenders normalized so their amounts sum to the order total (cash absorbs
-  /// any change).
+  /// The tenders as the customer handed them over — their amounts sum to
+  /// [paidAmount]. Cash change is reported separately in [changeAmount] (and is
+  /// reconciled out of the drawer at shift close), never folded into a tender.
   final List<PosPayment> payments;
 
   /// Total amount the customer handed over (may exceed the total for cash).
-  final double paidAmount;
+  final Money paidAmount;
 
   /// Change owed back to the customer.
-  final double changeAmount;
+  final Money changeAmount;
 }
 
 class _Tender {
-  _Tender({required this.method, required this.amount, this.label, this.reference});
+  _Tender({
+    required this.method,
+    required this.amount,
+    this.label,
+    this.reference,
+  });
   final PaymentMethod method;
-  final double amount;
+  final Money amount;
   final String? label;
   final String? reference;
 }
@@ -43,7 +50,7 @@ String _methodLabel(BuildContext context, PaymentMethod method) {
   }
 }
 
-Future<PaymentOutcome?> showPaymentDialog(BuildContext context, double total) {
+Future<PaymentOutcome?> showPaymentDialog(BuildContext context, Money total) {
   return showDialog<PaymentOutcome>(
     context: context,
     barrierDismissible: false,
@@ -54,7 +61,7 @@ Future<PaymentOutcome?> showPaymentDialog(BuildContext context, double total) {
 class _PaymentDialog extends StatefulWidget {
   const _PaymentDialog({required this.total});
 
-  final double total;
+  final Money total;
 
   @override
   State<_PaymentDialog> createState() => _PaymentDialogState();
@@ -68,17 +75,23 @@ class _PaymentDialogState extends State<_PaymentDialog> {
 
   PaymentMethod _method = PaymentMethod.cash;
 
-  double get _nonCashTendered => _tenders
-      .where((t) => t.method != PaymentMethod.cash)
-      .fold(0, (sum, t) => sum + t.amount);
+  Money get _nonCashTendered => sumMoney(
+    _tenders.where((t) => t.method != PaymentMethod.cash).map((t) => t.amount),
+  );
 
-  double get _totalTendered => _tenders.fold(0, (sum, t) => sum + t.amount);
+  Money get _totalTendered => sumMoney(_tenders.map((t) => t.amount));
 
-  double get _remaining =>
-      (widget.total - _totalTendered).clamp(0, widget.total).toDouble();
-  double get _change =>
-      (_totalTendered - widget.total).clamp(0, double.infinity).toDouble();
-  bool get _isCovered => _totalTendered + 0.0001 >= widget.total;
+  Money get _remaining {
+    final diff = widget.total.subtract(_totalTendered);
+    return diff.isNegative ? Money.zero() : diff;
+  }
+
+  Money get _change {
+    final diff = _totalTendered.subtract(widget.total);
+    return diff.isNegative ? Money.zero() : diff;
+  }
+
+  bool get _isCovered => _totalTendered >= widget.total;
 
   @override
   void initState() {
@@ -95,39 +108,53 @@ class _PaymentDialogState extends State<_PaymentDialog> {
   }
 
   void _resetAmountToRemaining() {
-    final due = widget.total - _totalTendered;
-    _amountController.text = due > 0 ? _trim(due) : '';
+    final due = widget.total.subtract(_totalTendered);
+    _amountController.text = due.isPositive ? _trim(due) : '';
   }
 
-  String _trim(double v) {
-    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
-    return v.toStringAsFixed(2);
+  String _trim(Money v) {
+    final s = v.toStorageString();
+    return s.endsWith('.00') ? s.substring(0, s.length - 3) : s;
   }
 
   void _addTender() {
     final l10n = context.l10n;
-    final amount = double.tryParse(_amountController.text.trim());
-    if (amount == null || amount <= 0) {
+    final text = _amountController.text.trim();
+    final raw = double.tryParse(text);
+    if (raw == null || raw <= 0) {
       _toast(l10n.enterValidAmount);
       return;
     }
-    if (_method != PaymentMethod.cash && amount > _remaining + 0.0001) {
-      _toast(l10n.cannotExceedRemaining(_methodLabel(context, _method), formatEgp(_remaining)));
+    // Build the amount from the exact decimal string rather than the parsed
+    // double, so user input never round-trips through binary floating point.
+    final amount = Money.parse(text);
+    if (_method != PaymentMethod.cash && amount > _remaining) {
+      _toast(
+        l10n.cannotExceedRemaining(
+          _methodLabel(context, _method),
+          formatMoney(_remaining),
+        ),
+      );
       return;
     }
-    if (_method == PaymentMethod.custom && _labelController.text.trim().isEmpty) {
+    if (_method == PaymentMethod.custom &&
+        _labelController.text.trim().isEmpty) {
       _toast(l10n.nameCustomMethod);
       return;
     }
     setState(() {
-      _tenders.add(_Tender(
-        method: _method,
-        amount: amount,
-        label: _method == PaymentMethod.custom ? _labelController.text.trim() : null,
-        reference: _referenceController.text.trim().isEmpty
-            ? null
-            : _referenceController.text.trim(),
-      ));
+      _tenders.add(
+        _Tender(
+          method: _method,
+          amount: amount,
+          label: _method == PaymentMethod.custom
+              ? _labelController.text.trim()
+              : null,
+          reference: _referenceController.text.trim().isEmpty
+              ? null
+              : _referenceController.text.trim(),
+        ),
+      );
       _labelController.clear();
       _referenceController.clear();
       _resetAmountToRemaining();
@@ -143,20 +170,35 @@ class _PaymentDialogState extends State<_PaymentDialog> {
 
   void _confirm() {
     if (!_isCovered) return;
-    final nonCash = _tenders.where((t) => t.method != PaymentMethod.cash).toList();
+    final nonCash = _tenders
+        .where((t) => t.method != PaymentMethod.cash)
+        .toList();
     final payments = <PosPayment>[
       for (final t in nonCash)
-        PosPayment(method: t.method, amount: t.amount, label: t.label, reference: t.reference),
+        PosPayment(
+          method: t.method,
+          amount: t.amount,
+          label: t.label,
+          reference: t.reference,
+        ),
     ];
-    final cashApplied = widget.total - _nonCashTendered;
-    if (cashApplied > 0.0001) {
-      payments.add(PosPayment(method: PaymentMethod.cash, amount: cashApplied));
+    // Record the cash actually handed over (gross), not the net-of-change
+    // amount, so the payment lines sum to paidAmount and the receipt reconciles.
+    // Change is reported separately and is subtracted from the drawer when the
+    // shift is closed.
+    final cashTendered = _totalTendered.subtract(_nonCashTendered);
+    if (cashTendered.isPositive) {
+      payments.add(
+        PosPayment(method: PaymentMethod.cash, amount: cashTendered),
+      );
     }
-    Navigator.of(context).pop(PaymentOutcome(
-      payments: payments,
-      paidAmount: _totalTendered,
-      changeAmount: _change,
-    ));
+    Navigator.of(context).pop(
+      PaymentOutcome(
+        payments: payments,
+        paidAmount: _totalTendered,
+        changeAmount: _change,
+      ),
+    );
   }
 
   void _toast(String message) {
@@ -165,16 +207,17 @@ class _PaymentDialogState extends State<_PaymentDialog> {
     );
   }
 
-  List<double> get _quickCash {
-    final due = widget.total - _totalTendered;
-    if (due <= 0) return const [];
+  List<Money> get _quickCash {
+    final due = widget.total.subtract(_totalTendered);
+    if (!due.isPositive) return const [];
+    final d = due.toDouble();
     final suggestions = <double>{
-      due,
-      (due / 50).ceil() * 50.0,
-      (due / 100).ceil() * 100.0,
-      ((due / 100).ceil() * 100.0) + 100,
+      d,
+      (d / 50).ceil() * 50.0,
+      (d / 100).ceil() * 100.0,
+      ((d / 100).ceil() * 100.0) + 100,
     };
-    return suggestions.where((v) => v >= due).toList()..sort();
+    return suggestions.where((v) => v >= d).map(Money.fromNum).toList()..sort();
   }
 
   @override
@@ -200,16 +243,30 @@ class _PaymentDialogState extends State<_PaymentDialog> {
               const SizedBox(height: 18),
               SegmentedButton<PaymentMethod>(
                 segments: [
-                  ButtonSegment(value: PaymentMethod.cash, label: Text(l10n.cash), icon: const Icon(Icons.payments_outlined)),
-                  ButtonSegment(value: PaymentMethod.card, label: Text(l10n.card), icon: const Icon(Icons.credit_card)),
-                  ButtonSegment(value: PaymentMethod.custom, label: Text(l10n.custom), icon: const Icon(Icons.account_balance_wallet_outlined)),
+                  ButtonSegment(
+                    value: PaymentMethod.cash,
+                    label: Text(l10n.cash),
+                    icon: const Icon(Icons.payments_outlined),
+                  ),
+                  ButtonSegment(
+                    value: PaymentMethod.card,
+                    label: Text(l10n.card),
+                    icon: const Icon(Icons.credit_card),
+                  ),
+                  ButtonSegment(
+                    value: PaymentMethod.custom,
+                    label: Text(l10n.custom),
+                    icon: const Icon(Icons.account_balance_wallet_outlined),
+                  ),
                 ],
                 selected: {_method},
                 onSelectionChanged: (selected) {
                   setState(() {
                     _method = selected.first;
                     if (_method != PaymentMethod.cash) {
-                      _amountController.text = _remaining > 0 ? _trim(_remaining) : '';
+                      _amountController.text = _remaining.isPositive
+                          ? _trim(_remaining)
+                          : '';
                     }
                   });
                 },
@@ -231,8 +288,12 @@ class _PaymentDialogState extends State<_PaymentDialog> {
                   Expanded(
                     child: TextField(
                       controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
                       decoration: InputDecoration(
                         labelText: l10n.amount,
                         prefixText: 'EGP ',
@@ -263,7 +324,7 @@ class _PaymentDialogState extends State<_PaymentDialog> {
                   children: [
                     for (final amount in _quickCash)
                       ActionChip(
-                        label: Text(formatEgp(amount)),
+                        label: Text(formatMoney(amount)),
                         onPressed: () {
                           _amountController.text = _trim(amount);
                         },
@@ -301,7 +362,11 @@ class _PaymentDialogState extends State<_PaymentDialog> {
         FilledButton.icon(
           onPressed: _isCovered ? _confirm : null,
           icon: const Icon(Icons.check_circle_outline),
-          label: Text(_change > 0 ? l10n.confirmChange(formatEgp(_change)) : l10n.confirmPayment),
+          label: Text(
+            _change.isPositive
+                ? l10n.confirmChange(formatMoney(_change))
+                : l10n.confirmPayment,
+          ),
         ),
       ],
     );
@@ -317,10 +382,10 @@ class _SummaryHeader extends StatelessWidget {
     required this.covered,
   });
 
-  final double total;
-  final double paid;
-  final double remaining;
-  final double change;
+  final Money total;
+  final Money paid;
+  final Money remaining;
+  final Money change;
   final bool covered;
 
   @override
@@ -337,21 +402,42 @@ class _SummaryHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(l10n.totalDue, style: const TextStyle(color: OperixColors.subtle)),
               Text(
-                formatEgp(total),
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+                l10n.totalDue,
+                style: const TextStyle(color: OperixColors.subtle),
+              ),
+              Text(
+                formatMoney(total),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _miniStat(l10n.paid, formatEgp(paid), OperixColors.teal)),
+              Expanded(
+                child: _miniStat(
+                  l10n.paid,
+                  formatMoney(paid),
+                  OperixColors.teal,
+                ),
+              ),
               Expanded(
                 child: covered
-                    ? _miniStat(l10n.change, formatEgp(change), OperixColors.teal)
-                    : _miniStat(l10n.remaining, formatEgp(remaining), const Color(0xFFFBBF24)),
+                    ? _miniStat(
+                        l10n.change,
+                        formatMoney(change),
+                        OperixColors.teal,
+                      )
+                    : _miniStat(
+                        l10n.remaining,
+                        formatMoney(remaining),
+                        const Color(0xFFFBBF24),
+                      ),
               ),
             ],
           ),
@@ -364,9 +450,19 @@ class _SummaryHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: OperixColors.subtle, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: OperixColors.subtle, fontSize: 12),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ],
     );
   }
@@ -386,7 +482,9 @@ class _TenderRow extends StatelessWidget {
       PaymentMethod.custom => Icons.account_balance_wallet_outlined,
     };
     final display = tender.method == PaymentMethod.custom
-        ? (tender.label?.trim().isNotEmpty == true ? tender.label!.trim() : context.l10n.custom)
+        ? (tender.label?.trim().isNotEmpty == true
+              ? tender.label!.trim()
+              : context.l10n.custom)
         : _methodLabel(context, tender.method);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -398,13 +496,25 @@ class _TenderRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(display, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  display,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 if (tender.reference != null)
-                  Text(tender.reference!, style: const TextStyle(color: OperixColors.muted, fontSize: 12)),
+                  Text(
+                    tender.reference!,
+                    style: const TextStyle(
+                      color: OperixColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
               ],
             ),
           ),
-          Text(formatEgp(tender.amount), style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            formatMoney(tender.amount),
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           IconButton(
             icon: const Icon(Icons.close, size: 18),
             color: OperixColors.danger,

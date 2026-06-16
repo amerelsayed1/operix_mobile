@@ -5,7 +5,10 @@ import 'operix_repository.dart';
 /// "no rows" fallback for [PostgresOperixRepository]. No sample data is seeded.
 class DemoOperixRepository implements OperixRepository {
   @override
-  Future<OperixDashboardData> loadDashboard() async {
+  Future<OperixDashboardData> loadDashboard({
+    DashboardPeriod period = const DashboardPeriod.thisMonth(),
+  }) async {
+    // Demo data is empty regardless of the selected period.
     return OperixDashboardData(
       connectionStatus: await testConnection(),
       metrics: const [],
@@ -18,6 +21,7 @@ class DemoOperixRepository implements OperixRepository {
       clients: const [],
       suppliers: const [],
       accountingTasks: const [],
+      report: DashboardReport.demo(),
     );
   }
 

@@ -20,7 +20,10 @@ class LanguageToggle extends StatelessWidget {
       onPressed: () => controller.toggle(),
       style: TextButton.styleFrom(foregroundColor: color),
       icon: const Icon(Icons.translate, size: 18),
-      label: Text(nextLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+      label: Text(
+        nextLabel,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

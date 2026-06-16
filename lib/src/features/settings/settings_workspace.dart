@@ -1,22 +1,35 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/app_session.dart';
+import '../../app/l10n_ext.dart';
 import '../../app/operix_theme.dart';
 import '../../config/database_config.dart';
 import '../../data/business_repository.dart';
+import '../../data/license_repository.dart';
 import '../../domain/business_profile.dart';
 import '../../domain/license_models.dart';
 import '../../domain/operix_models.dart';
-import '../../data/license_repository.dart';
+import 'categories_panel.dart';
+import 'company_settings_panel.dart';
+import 'roles_permissions_panel.dart';
+import 'settings_ui.dart';
+import 'units_panel.dart';
 
-enum _SettingsSection {
+enum SettingsSection {
   company,
-  documents,
-  payments,
-  products,
   accounting,
+  roles,
+  payments,
+  costCategories,
+  invoiceSettings,
+  printSettings,
+  printers,
+  posDevices,
+  itemCategories,
+  itemAttributes,
+  units,
+  taxSettings,
   system,
 }
 
@@ -37,7 +50,7 @@ class SettingsWorkspace extends StatefulWidget {
 }
 
 class _SettingsWorkspaceState extends State<SettingsWorkspace> {
-  _SettingsSection _section = _SettingsSection.company;
+  SettingsSection _section = SettingsSection.company;
   late Future<BusinessProfile?> _profileFuture;
   late Future<LicenseValidationResult> _licenseFuture;
 
@@ -52,33 +65,67 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
     _licenseFuture = context.read<LicenseRepository>().loadLicense();
   }
 
-  Future<void> _profileSaved() async {
+  void _profileSaved() {
     widget.onBusinessChanged?.call();
     setState(_reload);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Business settings saved')));
+  }
+
+  String _sectionLabel(SettingsSection section) {
+    final l10n = context.l10n;
+    return switch (section) {
+      SettingsSection.company => l10n.navCompanyInfo,
+      SettingsSection.accounting => l10n.navAccountingSettings,
+      SettingsSection.roles => l10n.navRolesPermissions,
+      SettingsSection.payments => l10n.navPaymentMethods,
+      SettingsSection.costCategories => l10n.navCostCategories,
+      SettingsSection.invoiceSettings => l10n.navInvoiceSettings,
+      SettingsSection.printSettings => l10n.navPrintSettings,
+      SettingsSection.printers => l10n.navPrinters,
+      SettingsSection.posDevices => l10n.navPosDevices,
+      SettingsSection.itemCategories => l10n.navItemCategories,
+      SettingsSection.itemAttributes => l10n.navItemAttributes,
+      SettingsSection.units => l10n.navUnits,
+      SettingsSection.taxSettings => l10n.navTaxSettings,
+      SettingsSection.system => l10n.navSettings,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ColoredBox(
       color: OperixColors.background,
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: 280,
-            child: _SettingsNav(
-              selected: _section,
-              onSelected: (section) => setState(() => _section = section),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(40, 22, 40, 0),
+            child: SettingsBreadcrumb(
+              trail: [
+                l10n.navDashboard,
+                l10n.navSettings,
+                _sectionLabel(_section),
+              ],
             ),
           ),
-          const VerticalDivider(width: 1),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: _sectionBody(),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(40, 24, 24, 40),
+                    child: _sectionBody(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 24, 24, 24),
+                  child: _SettingsNav(
+                    selected: _section,
+                    onSelected: (s) => setState(() => _section = s),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -88,7 +135,7 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
 
   Widget _sectionBody() {
     switch (_section) {
-      case _SettingsSection.company:
+      case SettingsSection.company:
         return FutureBuilder<BusinessProfile?>(
           future: _profileFuture,
           builder: (context, snapshot) {
@@ -98,95 +145,33 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
             final profile =
                 snapshot.data ??
                 const BusinessProfile(
-                  businessName: 'Operix Business',
+                  businessName: '',
                   branchName: 'Main branch',
                 );
-            return _CompanySettingsPanel(
+            return CompanySettingsPanel(
+              key: ValueKey(profile.hashCode),
               profile: profile,
               onSaved: _profileSaved,
             );
           },
         );
-      case _SettingsSection.documents:
-        return const _PlannedSettingsPanel(
-          title: 'Documents & printing',
-          description:
-              'Matches Operix web settings for receipts, invoices, barcode labels, and printer templates.',
-          items: [
-            _ReviewedItem(
-              'Cashier receipt template',
-              'Local receipt header, logo, footer, paper width',
-            ),
-            _ReviewedItem(
-              'Invoice print layouts',
-              'Sales and supplier invoice configuration',
-            ),
-            _ReviewedItem(
-              'Printer profiles',
-              'Thermal receipt, barcode label, and document printers',
-            ),
-          ],
-        );
-      case _SettingsSection.payments:
-        return const _PlannedSettingsPanel(
-          title: 'Payment methods',
-          description:
-              'The web app supports cash, bank, wallet, card, and custom methods with account mapping.',
-          items: [
-            _ReviewedItem('Cash', 'Default drawer/cash account mapping'),
-            _ReviewedItem(
-              'Card / bank',
-              'Reference number and settlement account support',
-            ),
-            _ReviewedItem(
-              'Wallet / custom',
-              'Named local methods for POS split payments',
-            ),
-          ],
-        );
-      case _SettingsSection.products:
-        return const _PlannedSettingsPanel(
-          title: 'Products reference data',
-          description:
-              'The web app Settings area contains categories, attributes, units, taxes, and tax groups.',
-          items: [
-            _ReviewedItem(
-              'Categories',
-              'Product grouping for POS and inventory',
-            ),
-            _ReviewedItem('Units', 'Piece, box, kg, meter, and custom units'),
-            _ReviewedItem(
-              'Taxes',
-              'Tax rates and default POS/sales tax behavior',
-            ),
-          ],
-        );
-      case _SettingsSection.accounting:
-        return const _PlannedSettingsPanel(
-          title: 'Accounting & compliance',
-          description:
-              'Local desktop should keep only operational accounting settings, not SaaS tenant governance.',
-          items: [
-            _ReviewedItem(
-              'Fiscal periods',
-              'Open/close/reopen local accounting periods',
-            ),
-            _ReviewedItem(
-              'Posting controls',
-              'Sales, purchases, inventory adjustments, cash variance',
-            ),
-            _ReviewedItem(
-              'Compliance',
-              'Egypt ETA / tax identifiers when needed by the client',
-            ),
-          ],
-        );
-      case _SettingsSection.system:
+      case SettingsSection.roles:
+        if (!context.read<AppSession>().can('roles.view')) {
+          return const _RestrictedPanel();
+        }
+        return const RolesPermissionsPanel();
+      case SettingsSection.itemCategories:
+        return const CategoriesPanel();
+      case SettingsSection.units:
+        return const UnitsPanel();
+      case SettingsSection.system:
         return _SystemSettingsPanel(
           status: widget.status,
           databaseConfig: widget.databaseConfig,
           licenseFuture: _licenseFuture,
         );
+      default:
+        return _ComingSoonPanel(title: _sectionLabel(_section));
     }
   }
 }
@@ -194,210 +179,209 @@ class _SettingsWorkspaceState extends State<SettingsWorkspace> {
 class _SettingsNav extends StatelessWidget {
   const _SettingsNav({required this.selected, required this.onSelected});
 
-  final _SettingsSection selected;
-  final ValueChanged<_SettingsSection> onSelected;
-
-  static const _items = [
-    _SettingsNavItem(
-      _SettingsSection.company,
-      Icons.storefront_outlined,
-      'Company',
-    ),
-    _SettingsNavItem(
-      _SettingsSection.documents,
-      Icons.print_outlined,
-      'Documents',
-    ),
-    _SettingsNavItem(_SettingsSection.payments, Icons.credit_card, 'Payments'),
-    _SettingsNavItem(
-      _SettingsSection.products,
-      Icons.category_outlined,
-      'Products',
-    ),
-    _SettingsNavItem(
-      _SettingsSection.accounting,
-      Icons.account_balance,
-      'Accounting',
-    ),
-    _SettingsNavItem(_SettingsSection.system, Icons.storage_outlined, 'System'),
-  ];
+  final SettingsSection selected;
+  final ValueChanged<SettingsSection> onSelected;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final canViewRoles = context.read<AppSession>().can('roles.view');
+    final groups = <_NavGroup>[
+      _NavGroup(l10n.settingsGroupBusiness, [
+        const _NavItem(SettingsSection.company, Icons.business_outlined),
+        const _NavItem(SettingsSection.accounting, Icons.menu_book_outlined),
+        if (canViewRoles)
+          const _NavItem(SettingsSection.roles, Icons.shield_outlined),
+        const _NavItem(SettingsSection.payments, Icons.credit_card_outlined),
+        const _NavItem(SettingsSection.costCategories, Icons.sell_outlined),
+      ]),
+      _NavGroup(l10n.settingsGroupDocuments, const [
+        _NavItem(SettingsSection.invoiceSettings, Icons.description_outlined),
+        _NavItem(SettingsSection.printSettings, Icons.print_outlined),
+        _NavItem(SettingsSection.printers, Icons.local_printshop_outlined),
+      ]),
+      _NavGroup(l10n.settingsGroupPos, const [
+        _NavItem(SettingsSection.posDevices, Icons.desktop_windows_outlined),
+      ]),
+      _NavGroup(l10n.settingsGroupProducts, const [
+        _NavItem(SettingsSection.itemCategories, Icons.account_tree_outlined),
+        _NavItem(SettingsSection.itemAttributes, Icons.label_outline),
+        _NavItem(SettingsSection.units, Icons.straighten_outlined),
+        _NavItem(SettingsSection.taxSettings, Icons.percent_outlined),
+      ]),
+      _NavGroup(l10n.navSettings, const [
+        _NavItem(SettingsSection.system, Icons.storage_outlined),
+      ]),
+    ];
+
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Settings',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: OperixColors.ink,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Local business configuration',
-            style: TextStyle(color: OperixColors.muted),
-          ),
-          const SizedBox(height: 18),
-          for (final item in _items)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: ListTile(
-                selected: selected == item.section,
-                selectedTileColor: const Color(0xFFEFF6FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+      width: 264,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: OperixColors.border),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var g = 0; g < groups.length; g++) ...[
+              if (g > 0) const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(
+                  groups[g].title,
+                  style: const TextStyle(
+                    color: OperixColors.subtle,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
                 ),
-                leading: Icon(item.icon),
-                title: Text(
-                  item.label,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                onTap: () => onSelected(item.section),
               ),
+              for (final item in groups[g].items)
+                _NavTile(
+                  label: _label(context, item.section),
+                  icon: item.icon,
+                  selected: selected == item.section,
+                  onTap: () => onSelected(item.section),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _label(BuildContext context, SettingsSection section) {
+    final l10n = context.l10n;
+    return switch (section) {
+      SettingsSection.company => l10n.navCompanyInfo,
+      SettingsSection.accounting => l10n.navAccountingSettings,
+      SettingsSection.roles => l10n.navRolesPermissions,
+      SettingsSection.payments => l10n.navPaymentMethods,
+      SettingsSection.costCategories => l10n.navCostCategories,
+      SettingsSection.invoiceSettings => l10n.navInvoiceSettings,
+      SettingsSection.printSettings => l10n.navPrintSettings,
+      SettingsSection.printers => l10n.navPrinters,
+      SettingsSection.posDevices => l10n.navPosDevices,
+      SettingsSection.itemCategories => l10n.navItemCategories,
+      SettingsSection.itemAttributes => l10n.navItemAttributes,
+      SettingsSection.units => l10n.navUnits,
+      SettingsSection.taxSettings => l10n.navTaxSettings,
+      SettingsSection.system => l10n.navSettings,
+    };
+  }
+}
+
+class _NavTile extends StatelessWidget {
+  const _NavTile({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? const Color(0xFF4F46E5) : const Color(0xFF475569);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+      child: Material(
+        color: selected ? const Color(0xFFEEF2FF) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          hoverColor: const Color(0xFFF8FAFC),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            child: Row(
+              children: [
+                Icon(icon, size: 19, color: color),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? color : const Color(0xFF334155),
+                      fontSize: 13.5,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (selected)
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4F46E5),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _CompanySettingsPanel extends StatefulWidget {
-  const _CompanySettingsPanel({required this.profile, required this.onSaved});
-
-  final BusinessProfile profile;
-  final VoidCallback onSaved;
-
-  @override
-  State<_CompanySettingsPanel> createState() => _CompanySettingsPanelState();
+class _NavGroup {
+  const _NavGroup(this.title, this.items);
+  final String title;
+  final List<_NavItem> items;
 }
 
-class _CompanySettingsPanelState extends State<_CompanySettingsPanel> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late final TextEditingController _branchController;
-  late final TextEditingController _logoController;
-  bool _saving = false;
+class _NavItem {
+  const _NavItem(this.section, this.icon);
+  final SettingsSection section;
+  final IconData icon;
+}
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.profile.businessName);
-    _branchController = TextEditingController(text: widget.profile.branchName);
-    _logoController = TextEditingController(
-      text: widget.profile.logoPath ?? '',
-    );
-  }
+class _ComingSoonPanel extends StatelessWidget {
+  const _ComingSoonPanel({required this.title});
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _branchController.dispose();
-    _logoController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _saving = true);
-    try {
-      await context.read<BusinessRepository>().saveProfile(
-        BusinessProfile(
-          businessName: _nameController.text,
-          branchName: _branchController.text,
-          logoPath: _logoController.text,
-        ),
-      );
-      if (!mounted) return;
-      widget.onSaved();
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return _SettingsCard(
-      title: 'Company information',
-      subtitle:
-          'Reviewed from Operix web Company Settings. Billing/subscription fields are intentionally excluded for local desktop.',
-      child: Form(
-        key: _formKey,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final l10n = context.l10n;
+    return SettingsCard(
+      title: title,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        child: Column(
           children: [
-            _LogoPreview(
-              businessName: _nameController.text,
-              logoPath: _logoController.text,
+            const Icon(
+              Icons.hourglass_empty,
+              size: 44,
+              color: OperixColors.subtle,
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Business name',
-                      prefixIcon: Icon(Icons.storefront_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Enter the business name'
-                        : null,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _branchController,
-                    decoration: const InputDecoration(
-                      labelText: 'Branch name',
-                      prefixIcon: Icon(Icons.location_on_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Enter the branch name'
-                        : null,
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _logoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Business logo path',
-                      hintText: '/Users/.../logo.png',
-                      prefixIcon: Icon(Icons.image_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      onPressed: _saving ? null : _save,
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.save_outlined),
-                      label: Text(
-                        _saving ? 'Saving…' : 'Save company settings',
-                      ),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 14),
+            Text(
+              l10n.comingSoonTitle,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: OperixColors.ink,
               ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.comingSoonBody,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: OperixColors.muted),
             ),
           ],
         ),
@@ -406,39 +390,31 @@ class _CompanySettingsPanelState extends State<_CompanySettingsPanel> {
   }
 }
 
-class _PlannedSettingsPanel extends StatelessWidget {
-  const _PlannedSettingsPanel({
-    required this.title,
-    required this.description,
-    required this.items,
-  });
-
-  final String title;
-  final String description;
-  final List<_ReviewedItem> items;
+class _RestrictedPanel extends StatelessWidget {
+  const _RestrictedPanel();
 
   @override
   Widget build(BuildContext context) {
-    return _SettingsCard(
-      title: title,
-      subtitle: description,
-      child: Column(
-        children: [
-          for (final item in items)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.check_circle_outline,
-                color: OperixColors.tealDark,
-              ),
-              title: Text(
-                item.title,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: Text(item.description),
-              trailing: const _StatusChip(label: 'Planned'),
+    final l10n = context.l10n;
+    return SettingsCard(
+      title: l10n.accessDeniedTitle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.lock_outline,
+              size: 44,
+              color: OperixColors.subtle,
             ),
-        ],
+            const SizedBox(height: 14),
+            Text(
+              l10n.accessDeniedBody,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: OperixColors.muted),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -457,23 +433,27 @@ class _SystemSettingsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SettingsCard(
-          title: 'Database',
-          subtitle: 'Local PostgreSQL connection used by this workstation.',
+        SettingsCard(
+          title: l10n.settingsDatabase,
+          subtitle: l10n.settingsDatabaseSubtitle,
           child: Column(
             children: [
               _SettingLine(
-                'Source',
-                status.connected ? 'PostgreSQL' : 'Demo data',
+                l10n.settingsSource,
+                status.connected ? 'PostgreSQL' : l10n.settingsDemoData,
               ),
-              _SettingLine('Target', databaseConfig.targetLabel),
+              _SettingLine(l10n.settingsTarget, databaseConfig.targetLabel),
               _SettingLine(
-                'Configured',
-                databaseConfig.isConfigured ? 'Yes' : 'No',
+                l10n.settingsConfigured,
+                databaseConfig.isConfigured
+                    ? l10n.settingsYes
+                    : l10n.settingsNo,
               ),
-              _SettingLine('SSL mode', databaseConfig.sslModeName),
+              _SettingLine(l10n.settingsSslMode, databaseConfig.sslModeName),
             ],
           ),
         ),
@@ -483,22 +463,25 @@ class _SystemSettingsPanel extends StatelessWidget {
           builder: (context, snapshot) {
             final result = snapshot.data;
             final license = result?.license;
-            return _SettingsCard(
-              title: 'License',
-              subtitle: 'Offline workstation activation.',
+            return SettingsCard(
+              title: l10n.settingsLicense,
+              subtitle: l10n.settingsLicenseSubtitle,
               child: Column(
                 children: [
                   _SettingLine(
-                    'Installation id',
-                    result?.installationId ?? 'Loading…',
+                    l10n.settingsInstallationId,
+                    result?.installationId ?? l10n.settingsLoading,
                   ),
-                  _SettingLine('Status', result?.status.name ?? 'Loading'),
                   _SettingLine(
-                    'Licensed business',
+                    l10n.settingsStatus,
+                    result?.status.name ?? l10n.settingsLoading,
+                  ),
+                  _SettingLine(
+                    l10n.settingsLicensedBusiness,
                     license?.businessName ?? '—',
                   ),
                   _SettingLine(
-                    'Expires',
+                    l10n.settingsExpires,
                     license?.expiresAt.toLocal().toString() ?? '—',
                   ),
                 ],
@@ -507,81 +490,6 @@ class _SystemSettingsPanel extends StatelessWidget {
           },
         ),
       ],
-    );
-  }
-}
-
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: OperixColors.ink,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(subtitle, style: const TextStyle(color: OperixColors.muted)),
-            const SizedBox(height: 22),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LogoPreview extends StatelessWidget {
-  const _LogoPreview({required this.businessName, required this.logoPath});
-
-  final String businessName;
-  final String logoPath;
-
-  @override
-  Widget build(BuildContext context) {
-    final path = logoPath.trim();
-    final hasLogo = path.isNotEmpty && File(path).existsSync();
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        color: OperixColors.night,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: OperixColors.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: hasLogo
-          ? Image.file(File(path), fit: BoxFit.cover)
-          : Center(
-              child: Text(
-                BusinessProfile(
-                  businessName: businessName,
-                  branchName: '',
-                ).initials,
-                style: const TextStyle(
-                  color: OperixColors.teal,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
     );
   }
 }
@@ -616,45 +524,4 @@ class _SettingLine extends StatelessWidget {
       ),
     );
   }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: OperixColors.warning.withAlpha(20),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: OperixColors.warning.withAlpha(70)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: OperixColors.warning,
-          fontWeight: FontWeight.w800,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsNavItem {
-  const _SettingsNavItem(this.section, this.icon, this.label);
-
-  final _SettingsSection section;
-  final IconData icon;
-  final String label;
-}
-
-class _ReviewedItem {
-  const _ReviewedItem(this.title, this.description);
-
-  final String title;
-  final String description;
 }

@@ -17,7 +17,9 @@ class LocaleController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final code = prefs.getString(_prefsKey);
-      return LocaleController(code == 'ar' ? const Locale('ar') : const Locale('en'));
+      return LocaleController(
+        code == 'ar' ? const Locale('ar') : const Locale('en'),
+      );
     } catch (_) {
       return LocaleController();
     }

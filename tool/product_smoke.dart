@@ -6,6 +6,7 @@ import 'package:operix_mobile/src/data/operix_database.dart';
 import 'package:operix_mobile/src/data/postgres_product_repository.dart';
 import 'package:operix_mobile/src/data/product_repository.dart';
 import 'package:operix_mobile/src/domain/inventory_models.dart';
+import 'package:operix_mobile/src/domain/value_objects/money.dart';
 
 Future<void> main() async {
   final db = OperixDatabase(DatabaseConfig.fromEnvironment());
@@ -21,8 +22,8 @@ Future<void> main() async {
       barcode: '6901234500001',
       category: 'Electronics',
       unit: 'Piece',
-      costPrice: 150,
-      sellingPrice: 220,
+      costPrice: Money.of('150'),
+      sellingPrice: Money.of('220'),
       minimumStockAlert: 10,
       quantityOnHand: 25,
       isActive: true,
@@ -39,8 +40,8 @@ Future<void> main() async {
         name: 'Dup',
         category: 'X',
         unit: 'Piece',
-        costPrice: 0,
-        sellingPrice: 1,
+        costPrice: Money.zero(),
+        sellingPrice: Money.of('1'),
         minimumStockAlert: 0,
         quantityOnHand: 0,
         isActive: true,
@@ -58,8 +59,8 @@ Future<void> main() async {
       name: 'Wireless Keyboard V2',
       category: 'Electronics',
       unit: 'Piece',
-      costPrice: 150,
-      sellingPrice: 240,
+      costPrice: Money.of('150'),
+      sellingPrice: Money.of('240'),
       minimumStockAlert: 5,
       quantityOnHand: 30,
       isActive: true,

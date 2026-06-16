@@ -1,6 +1,7 @@
 import 'package:postgres/postgres.dart';
 
 import '../domain/inventory_models.dart';
+import '../domain/value_objects/money.dart';
 import 'operix_database.dart';
 import 'product_repository.dart';
 
@@ -13,6 +14,7 @@ class PostgresProductRepository implements ProductRepository {
   Future<List<Product>> list({
     String search = '',
     bool includeInactive = true,
+    bool inStockOnly = false,
   }) async {
     final conn = await database.connection();
     final query = search.trim();
@@ -22,6 +24,7 @@ class PostgresProductRepository implements ProductRepository {
                reorder_level, quantity_on_hand, is_active
         FROM products
         WHERE (@include_inactive OR is_active = TRUE)
+          AND (NOT @in_stock_only OR quantity_on_hand > 0)
           AND (
             @q = ''
             OR name ILIKE '%' || @q || '%'
@@ -31,7 +34,11 @@ class PostgresProductRepository implements ProductRepository {
           )
         ORDER BY name ASC
       '''),
-      parameters: {'include_inactive': includeInactive, 'q': query},
+      parameters: {
+        'include_inactive': includeInactive,
+        'in_stock_only': inStockOnly,
+        'q': query,
+      },
     );
     return result.map((row) => _product(row.toColumnMap())).toList();
   }
@@ -142,8 +149,8 @@ class PostgresProductRepository implements ProductRepository {
         : d.barcode!.trim(),
     'category': d.category.trim().isEmpty ? 'General' : d.category.trim(),
     'unit': d.unit.trim().isEmpty ? 'Piece' : d.unit.trim(),
-    'cost_price': d.costPrice,
-    'selling_price': d.sellingPrice,
+    'cost_price': d.costPrice.toStorageString(),
+    'selling_price': d.sellingPrice.toStorageString(),
     'minimum_stock_alert': d.minimumStockAlert,
     'quantity_on_hand': d.quantityOnHand,
     'is_active': d.isActive,
@@ -157,8 +164,8 @@ class PostgresProductRepository implements ProductRepository {
       barcode: map['barcode'] as String?,
       category: _asString(map['category']),
       unit: _asString(map['unit']),
-      costPrice: _asDouble(map['cost_price']),
-      sellingPrice: _asDouble(map['unit_price']),
+      costPrice: _asMoney(map['cost_price']),
+      sellingPrice: _asMoney(map['unit_price']),
       minimumStockAlert: _asInt(map['reorder_level']),
       quantityOnHand: _asInt(map['quantity_on_hand']),
       isActive: map['is_active'] as bool? ?? true,
@@ -173,9 +180,5 @@ class PostgresProductRepository implements ProductRepository {
     return int.tryParse(v?.toString() ?? '') ?? 0;
   }
 
-  double _asDouble(Object? v) {
-    if (v is double) return v;
-    if (v is num) return v.toDouble();
-    return double.tryParse(v?.toString() ?? '') ?? 0;
-  }
+  Money _asMoney(Object? v) => Money.parse(v);
 }

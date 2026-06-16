@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/pos_repository.dart';
 import '../../domain/pos_models.dart';
+import '../../domain/value_objects/money.dart';
 
 /// Holds the working POS state for a single cashier: the product catalogue,
 /// the current category/search filter, and the live cart.
@@ -20,13 +21,13 @@ class PosController extends ChangeNotifier {
   String? _error;
   String _search = '';
   String? _category; // null => all categories
-  double _discount = 0;
+  Money _discount = Money.zero();
 
   bool get isLoading => _loading;
   String? get error => _error;
   String get search => _search;
   String? get category => _category;
-  double get discount => _discount;
+  Money get discount => _discount;
 
   List<CartLine> get cart => List.unmodifiable(_cart);
   bool get isCartEmpty => _cart.isEmpty;
@@ -51,10 +52,11 @@ class PosController extends ChangeNotifier {
     }).toList();
   }
 
-  double get subtotal => _cart.fold(0, (sum, line) => sum + line.lineTotal);
-  double get discountAmount => _discount.clamp(0, subtotal).toDouble();
-  double get taxAmount => (subtotal - discountAmount) * taxRate;
-  double get total => subtotal - discountAmount + taxAmount;
+  Money get subtotal => sumMoney(_cart.map((line) => line.lineTotal));
+  Money get discountAmount => _discount.clamp(Money.zero(), subtotal);
+  Money get taxAmount =>
+      subtotal.subtract(discountAmount).multiply(taxRate).rounded();
+  Money get total => subtotal.subtract(discountAmount).add(taxAmount);
 
   Future<void> load() async {
     _loading = true;
@@ -80,8 +82,8 @@ class PosController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDiscount(double value) {
-    _discount = value < 0 ? 0 : value;
+  void setDiscount(Money value) {
+    _discount = value.isNegative ? Money.zero() : value;
     notifyListeners();
   }
 
@@ -138,7 +140,7 @@ class PosController extends ChangeNotifier {
 
   void clearCart() {
     _cart.clear();
-    _discount = 0;
+    _discount = Money.zero();
     notifyListeners();
   }
 
@@ -148,8 +150,8 @@ class PosController extends ChangeNotifier {
     required AppUser cashier,
     required PosShift shift,
     required List<PosPayment> payments,
-    required double paidAmount,
-    required double changeAmount,
+    required Money paidAmount,
+    required Money changeAmount,
     String? customerName,
   }) async {
     final request = CheckoutRequest(

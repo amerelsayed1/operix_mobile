@@ -2,6 +2,7 @@ import 'package:postgres/postgres.dart';
 
 import '../config/database_config.dart';
 import '../domain/operix_models.dart';
+import '../domain/value_objects/money.dart';
 import 'operix_repository.dart';
 
 class PostgresOperixRepository implements OperixRepository {
@@ -21,8 +22,11 @@ class PostgresOperixRepository implements OperixRepository {
   };
 
   @override
-  Future<OperixDashboardData> loadDashboard() async {
-    final demoData = await fallback.loadDashboard();
+  Future<OperixDashboardData> loadDashboard({
+    DashboardPeriod period = const DashboardPeriod.thisMonth(),
+  }) async {
+    final demoData = await fallback.loadDashboard(period: period);
+    final window = period.resolve();
 
     if (!config.isConfigured) {
       return demoData.copyWith(connectionStatus: await testConnection());
@@ -64,6 +68,7 @@ class PostgresOperixRepository implements OperixRepository {
         posLines: await _loadPosLines(connection, demoData.posLines),
         clients: await _loadClients(connection, demoData.clients),
         suppliers: await _loadSuppliers(connection, demoData.suppliers),
+        report: await _loadReport(connection, demoData.report, window),
       );
     } catch (error) {
       return demoData.copyWith(
@@ -177,7 +182,7 @@ class PostgresOperixRepository implements OperixRepository {
           category: _asString(map['category']),
           quantity: _asInt(map['quantity_on_hand']),
           reorderLevel: _asInt(map['reorder_level']),
-          unitPrice: _asDouble(map['unit_price']),
+          unitPrice: _asMoney(map['unit_price']),
         );
       }).toList();
 
@@ -212,7 +217,7 @@ class PostgresOperixRepository implements OperixRepository {
           party: _asString(map['party']),
           status: _titleCase(_asString(map['status'])),
           issueDate: _asDate(map['issue_date']),
-          amount: _asDouble(map['total_amount']),
+          amount: _asMoney(map['total_amount']),
         );
       }).toList();
 
@@ -247,7 +252,7 @@ class PostgresOperixRepository implements OperixRepository {
           party: _asString(map['party']),
           status: _titleCase(_asString(map['status'])),
           issueDate: _asDate(map['issue_date']),
-          amount: _asDouble(map['total_amount']),
+          amount: _asMoney(map['total_amount']),
         );
       }).toList();
 
@@ -275,7 +280,7 @@ class PostgresOperixRepository implements OperixRepository {
         return PosLine(
           name: _asString(map['name']),
           quantity: _asInt(map['quantity']),
-          price: _asDouble(map['unit_price']),
+          price: _asMoney(map['unit_price']),
         );
       }).toList();
 
@@ -303,7 +308,7 @@ class PostgresOperixRepository implements OperixRepository {
           name: _asString(map['name']),
           code: _asString(map['client_code']),
           phone: _asString(map['phone']),
-          balance: _asDouble(map['receivable_balance']),
+          balance: _asMoney(map['receivable_balance']),
           status: _titleCase(_asString(map['status'])),
         );
       }).toList();
@@ -332,8 +337,211 @@ class PostgresOperixRepository implements OperixRepository {
           name: _asString(map['company_name']),
           code: _asString(map['supplier_code']),
           phone: _asString(map['phone']),
-          balance: -_asDouble(map['payable_balance']),
+          balance: _asMoney(map['payable_balance']).negate(),
           status: _titleCase(_asString(map['status'])),
+        );
+      }).toList();
+
+      return rows.isEmpty ? fallbackRows : rows;
+    } catch (_) {
+      return fallbackRows;
+    }
+  }
+
+  /// Computes the dashboard overview figures (KPIs, charts, top products)
+  /// entirely from live data. Net sales use ex-tax subtotals; "expenses" is the
+  /// total cost of sales (COGS + operating expenses) so that net profit, COGS
+  /// and operating expenses sum back to revenue for the donut.
+  Future<DashboardReport> _loadReport(
+    Connection connection,
+    DashboardReport fallback,
+    DashboardPeriodWindow window,
+  ) async {
+    try {
+      // Period-bounded flows (revenue, COGS, opex, orders, new customers and the
+      // current/previous comparison) use the resolved [start, end) window and the
+      // matching prior window. Point-in-time balances (cash, inventory value,
+      // supplier dues) stay as live snapshots, independent of the period.
+      final result = await connection.execute(
+        Sql.named('''
+        WITH
+          pos_rev   AS (SELECT COALESCE(SUM(subtotal),0) v FROM pos_orders WHERE status='completed' AND created_at >= @start AND created_at < @end),
+          inv_rev   AS (SELECT COALESCE(SUM(subtotal),0) v FROM sales_invoices WHERE status IN ('posted','paid') AND issue_date >= @start::date AND issue_date < @end::date),
+          pos_cogs  AS (SELECT COALESCE(SUM(poi.quantity*COALESCE(NULLIF(poi.unit_cost,0),p.cost_price,0)),0) v
+                          FROM pos_order_items poi
+                          JOIN pos_orders po ON po.id=poi.pos_order_id AND po.status='completed' AND po.created_at >= @start AND po.created_at < @end
+                          LEFT JOIN products p ON p.id=poi.product_id),
+          inv_cogs  AS (SELECT COALESCE(SUM(sii.quantity*COALESCE(NULLIF(sii.unit_cost,0),p.cost_price,0)),0) v
+                          FROM sales_invoice_items sii
+                          JOIN sales_invoices si ON si.id=sii.sales_invoice_id AND si.status IN ('posted','paid') AND si.issue_date >= @start::date AND si.issue_date < @end::date
+                          LEFT JOIN products p ON p.id=sii.product_id),
+          opex      AS (SELECT COALESCE(SUM(CASE WHEN l.line_type='debit' THEN l.amount ELSE -l.amount END),0) v
+                          FROM journal_entry_lines l
+                          JOIN gl_accounts a ON a.id=l.gl_account_id
+                          JOIN journal_entries j ON j.id=l.journal_entry_id AND j.status='posted' AND j.transaction_date >= @start::date AND j.transaction_date < @end::date
+                         WHERE a.code='5200'),
+          cash_pos  AS (SELECT COALESCE(SUM(amount),0) v FROM pos_order_payments),
+          cash_inv  AS (SELECT COALESCE(SUM(total_amount),0) v FROM sales_invoices WHERE status='paid'),
+          inv_val   AS (SELECT COALESCE(SUM(quantity_on_hand*cost_price),0) v FROM products),
+          sup_due   AS (SELECT COALESCE(SUM(payable_balance),0) v FROM suppliers),
+          ord_pos   AS (SELECT COUNT(*) v FROM pos_orders WHERE status='completed' AND created_at >= @start AND created_at < @end),
+          ord_inv   AS (SELECT COUNT(*) v FROM sales_invoices WHERE status IN ('posted','paid') AND issue_date >= @start::date AND issue_date < @end::date),
+          new_cust  AS (SELECT COUNT(*) v FROM clients WHERE created_at >= @start AND created_at < @end),
+          cur       AS (SELECT
+                          (SELECT COALESCE(SUM(subtotal),0) FROM pos_orders WHERE status='completed' AND created_at >= @start AND created_at < @end)
+                        + (SELECT COALESCE(SUM(subtotal),0) FROM sales_invoices WHERE status IN ('posted','paid') AND issue_date >= @start::date AND issue_date < @end::date) v),
+          prev      AS (SELECT
+                          (SELECT COALESCE(SUM(subtotal),0) FROM pos_orders WHERE status='completed' AND created_at >= @prev_start AND created_at < @prev_end)
+                        + (SELECT COALESCE(SUM(subtotal),0) FROM sales_invoices WHERE status IN ('posted','paid') AND issue_date >= @prev_start::date AND issue_date < @prev_end::date) v)
+        SELECT pos_rev.v AS pos_rev, inv_rev.v AS inv_rev, pos_cogs.v AS pos_cogs,
+               inv_cogs.v AS inv_cogs, opex.v AS opex, cash_pos.v AS cash_pos,
+               cash_inv.v AS cash_inv, inv_val.v AS inv_val, sup_due.v AS sup_due,
+               ord_pos.v AS ord_pos, ord_inv.v AS ord_inv, new_cust.v AS new_cust,
+               cur.v AS cur, prev.v AS prev
+        FROM pos_rev, inv_rev, pos_cogs, inv_cogs, opex, cash_pos, cash_inv,
+             inv_val, sup_due, ord_pos, ord_inv, new_cust, cur, prev
+      '''),
+        parameters: {
+          'start': window.start,
+          'end': window.end,
+          'prev_start': window.prevStart,
+          'prev_end': window.prevEnd,
+        },
+      );
+
+      if (result.isEmpty) {
+        return fallback;
+      }
+      final map = result.first.toColumnMap();
+
+      final revenue = _asMoney(map['pos_rev']).add(_asMoney(map['inv_rev']));
+      final cogs = _asMoney(map['pos_cogs']).add(_asMoney(map['inv_cogs']));
+      final opex = _asMoney(map['opex']);
+      final expenses = cogs.add(opex);
+      final netProfit = revenue.subtract(expenses);
+      final cashBalance = _asMoney(
+        map['cash_pos'],
+      ).add(_asMoney(map['cash_inv']));
+      final supplierDue = _asMoney(map['sup_due']).negate();
+      final orderCount = _asInt(map['ord_pos']) + _asInt(map['ord_inv']);
+
+      final revenueValue = revenue.toDouble();
+      final grossMargin = revenueValue <= 0
+          ? 0.0
+          : (netProfit.toDouble() / revenueValue) * 100;
+      final current = _asMoney(map['cur']).toDouble();
+      final previous = _asMoney(map['prev']).toDouble();
+      final revenueChangePct = previous > 0
+          ? ((current - previous) / previous) * 100
+          : (current > 0 ? 100.0 : 0.0);
+
+      return DashboardReport(
+        revenue: revenue.rounded(),
+        expenses: expenses.rounded(),
+        cogs: cogs.rounded(),
+        netProfit: netProfit.rounded(),
+        cashBalance: cashBalance.rounded(),
+        inventoryValue: _asMoney(map['inv_val']).rounded(),
+        supplierDue: supplierDue.rounded(),
+        orderCount: orderCount,
+        newCustomers: _asInt(map['new_cust']),
+        grossMargin: grossMargin,
+        revenueChangePct: revenueChangePct,
+        salesTrend: await _loadSalesTrend(
+          connection,
+          fallback.salesTrend,
+          window,
+        ),
+        topProducts: await _loadTopProducts(connection, fallback.topProducts),
+        breakdown: RevenueBreakdown(
+          netProfit: netProfit.rounded(),
+          cogs: cogs.rounded(),
+          operatingExpenses: opex.rounded(),
+        ),
+      );
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  Future<List<SalesTrendPoint>> _loadSalesTrend(
+    Connection connection,
+    List<SalesTrendPoint> fallbackRows,
+    DashboardPeriodWindow window,
+  ) async {
+    try {
+      // One point per day across the selected window, capped at today so we
+      // don't draw empty future days for month-to-date / custom ranges.
+      final result = await connection.execute(
+        Sql.named('''
+        WITH days AS (
+          SELECT generate_series(@start::date, LEAST(@end::date - 1, CURRENT_DATE), interval '1 day')::date AS d
+        ),
+        pos AS (
+          SELECT created_at::date AS d, SUM(subtotal) AS amt
+          FROM pos_orders
+          WHERE status='completed' AND created_at >= @start AND created_at < @end
+          GROUP BY 1
+        ),
+        inv AS (
+          SELECT issue_date AS d, SUM(subtotal) AS amt
+          FROM sales_invoices
+          WHERE status IN ('posted','paid') AND issue_date >= @start::date AND issue_date < @end::date
+          GROUP BY 1
+        )
+        SELECT days.d AS day, COALESCE(pos.amt,0) + COALESCE(inv.amt,0) AS net
+        FROM days
+        LEFT JOIN pos ON pos.d = days.d
+        LEFT JOIN inv ON inv.d = days.d
+        ORDER BY days.d
+      '''),
+        parameters: {'start': window.start, 'end': window.end},
+      );
+
+      final rows = result.map((row) {
+        final map = row.toColumnMap();
+        return SalesTrendPoint(
+          date: _asDate(map['day']),
+          net: _asMoney(map['net']),
+        );
+      }).toList();
+
+      return rows.isEmpty ? fallbackRows : rows;
+    } catch (_) {
+      return fallbackRows;
+    }
+  }
+
+  Future<List<TopProduct>> _loadTopProducts(
+    Connection connection,
+    List<TopProduct> fallbackRows,
+  ) async {
+    try {
+      final result = await connection.execute('''
+        WITH lines AS (
+          SELECT poi.name AS name, poi.quantity AS qty,
+                 poi.quantity * poi.unit_price AS rev
+          FROM pos_order_items poi
+          JOIN pos_orders po ON po.id = poi.pos_order_id AND po.status='completed'
+          UNION ALL
+          SELECT sii.name AS name, sii.quantity AS qty, sii.line_total AS rev
+          FROM sales_invoice_items sii
+          JOIN sales_invoices si ON si.id = sii.sales_invoice_id
+            AND si.status IN ('posted','paid')
+        )
+        SELECT name, SUM(rev) AS revenue, SUM(qty) AS quantity
+        FROM lines
+        GROUP BY name
+        ORDER BY revenue DESC
+        LIMIT 5
+      ''');
+
+      final rows = result.map((row) {
+        final map = row.toColumnMap();
+        return TopProduct(
+          name: _asString(map['name']),
+          revenue: _asMoney(map['revenue']),
+          quantity: _asInt(map['quantity']),
         );
       }).toList();
 
@@ -434,18 +642,7 @@ class PostgresOperixRepository implements OperixRepository {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  double _asDouble(Object? value) {
-    if (value is int) {
-      return value.toDouble();
-    }
-    if (value is double) {
-      return value;
-    }
-    if (value is num) {
-      return value.toDouble();
-    }
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
+  Money _asMoney(Object? value) => Money.parse(value);
 
   DateTime _asDate(Object? value) {
     if (value is DateTime) {

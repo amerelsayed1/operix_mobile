@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Finance Review — Inventory → Sales/POS Flow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 40px; }
+  .cover { text-align: center; padding: 60px 0 40px; border-bottom: 3px solid #6366F1; margin-bottom: 40px; }
+  .cover h1 { font-size: 28px; font-weight: 800; color: #6366F1; margin-bottom: 8px; }
+  .cover .subtitle { font-size: 15px; color: #64748B; }
+  .cover .meta { margin-top: 20px; font-size: 12px; color: #94A3B8; }
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; }
+  .badge.ok { background: #DCFCE7; color: #166534; }
+  .badge.risk { background: #FEF9C3; color: #854D0E; }
+  .badge.wrong { background: #FEE2E2; color: #991B1B; }
+  .badge.missing { background: #EDE9FE; color: #5B21B6; }
+  .section { margin-bottom: 32px; }
+  .section h2 { font-size: 16px; font-weight: 700; color: #1E293B; padding-bottom: 8px; border-bottom: 1px solid #E2E8F0; margin-bottom: 14px; }
+  .section h3 { font-size: 13px; font-weight: 700; color: #475569; margin: 14px 0 6px; }
+  .finding { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .finding.wrong { border-left: 4px solid #EF4444; }
+  .finding.risk { border-left: 4px solid #F59E0B; }
+  .finding.ok { border-left: 4px solid #10B981; }
+  .finding.missing { border-left: 4px solid #8B5CF6; }
+  .finding h3 { margin: 0; }
+  .finding p { line-height: 1.6; color: #374151; margin-top: 6px; }
+  .recommendation { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; padding: 14px 16px; margin-top: 16px; }
+  .recommendation h3 { color: #4338CA; margin: 0 0 6px; }
+  .recommendation p { color: #3730A3; line-height: 1.6; }
+  .code { font-family: monospace; background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #7C3AED; }
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 14px 0; }
+  .flow .step { flex: 1; min-width: 150px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; }
+  .flow .step .t { font-weight: 800; color: #1E293B; font-size: 12px; margin-bottom: 4px; }
+  .flow .step .d { color: #475569; font-size: 11px; line-height: 1.5; }
+  .flow .arrow { display: flex; align-items: center; color: #6366F1; font-weight: 900; font-size: 18px; }
+  .summary-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .summary-table th { background: #F1F5F9; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-table td { padding: 10px 14px; border-bottom: 1px solid #F1F5F9; vertical-align: top; }
+  .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #E2E8F0; text-align: center; font-size: 11px; color: #94A3B8; }
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Financial Review Report</h1>
+  <div class="subtitle">Inventory → Sales Invoice / POS Flow &amp; Out-of-Stock Invoicing</div>
+  <div class="meta">
+    Project: Operix (Flutter Desktop, PostgreSQL) &nbsp;|&nbsp; Date: 2026-06-16 &nbsp;|&nbsp; Reviewed by: Senior Finance Consultant (AI)
+  </div>
+</div>
+
+<!-- Executive Summary -->
+<div class="section">
+  <h2>Executive Summary</h2>
+  <p style="line-height:1.6;color:#374151;margin-bottom:6px;">
+    The purchase&nbsp;→&nbsp;inventory&nbsp;→&nbsp;sell flow is sound: a received product immediately surfaces in both the sales-invoice picker and the POS grid, because both read the live <span class="code">products</span> table. <strong>Invoicing an out-of-stock inventory item is blocked at save</strong> — which is financially correct (it prevents negative inventory and invalid COGS). Two UX/accounting gaps are worth addressing: the sales-invoice picker lets you <em>add</em> an out-of-stock item before failing at save, and positive stock adjustments post no GL and carry no cost.
+  </p>
+  <table class="summary-table">
+    <thead><tr><th>Area</th><th>Verdict</th><th>Priority</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Purchase receives stock (qty + cost + GL)</td><td><span class="badge ok">✅ Correct</span></td><td>—</td><td>Weighted-avg cost rolled; Inventory/Input-VAT/AP posted.</td></tr>
+      <tr><td>Product appears in sales-invoice picker</td><td><span class="badge ok">✅ Correct</span></td><td>—</td><td>Lists all active products live.</td></tr>
+      <tr><td>Product appears in POS grid</td><td><span class="badge ok">✅ Correct</span></td><td>—</td><td>All active products; out-of-stock tile disabled.</td></tr>
+      <tr><td>Out-of-stock sales invoice blocked at save</td><td><span class="badge ok">✅ Correct</span></td><td>—</td><td>Prevents negative inventory / invalid COGS (IAS 2).</td></tr>
+      <tr><td>Picker UX for out-of-stock items</td><td><span class="badge risk">⚠️ Risk</span></td><td>Medium</td><td>Lets you add it, then fails only at save — inconsistent with POS.</td></tr>
+      <tr><td>Stock adjustment GL &amp; cost</td><td><span class="badge wrong">❌ Wrong</span></td><td>High</td><td>Positive adjustment posts no GL, carries no cost → zero-COGS sales, Inventory drift.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- The Flow -->
+<div class="section">
+  <h2>The Flow, Traced</h2>
+  <div class="flow">
+    <div class="step">
+      <div class="t">1 · Purchase invoice</div>
+      <div class="d"><span class="code">postgres_purchase_invoice_repository.dart:75</span><br>qty ↑, weighted-avg cost rolled, stock_movement logged, GL: Dr 1300 + Dr 1400 / Cr 2100.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">2 · Inventory (products)</div>
+      <div class="d">Live <span class="code">products.quantity_on_hand</span> &amp; <span class="code">cost_price</span> updated in the same transaction.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">3 · Sales-invoice picker</div>
+      <div class="d"><span class="code">operix_dashboard.dart:2801</span> — <span class="code">products.list(includeInactive:false)</span>; stock shown red if ≤ 0.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="t">3 · POS grid</div>
+      <div class="d"><span class="code">postgres_pos_repository.dart:17</span> — all active products; out-of-stock tile disabled + "OUT" badge.</div>
+    </div>
+  </div>
+  <p style="line-height:1.6;color:#374151;">No intermediate publishing step is needed — both sell channels read inventory live, so a freshly-received product is immediately sellable.</p>
+</div>
+
+<!-- Detailed Findings -->
+<div class="section">
+  <h2>Detailed Findings</h2>
+
+  <div class="finding ok">
+    <h3><span class="badge ok">✅ Correct</span> &nbsp;Out-of-stock invoicing is blocked at save — by design</h3>
+    <p>
+      The sales-invoice picker lets you select a zero-stock product (stock just shows red), but on <strong>Save</strong> the repository guard
+      (<span class="code">_assertStockAvailable</span> + <span class="code">UPDATE … WHERE quantity_on_hand >= quantity RETURNING cost_price</span> in
+      <span class="code">postgres_sales_invoice_repository.dart</span>) throws <em>"Not enough stock to invoice X."</em> POS blocks earlier still
+      (<span class="code">pos_controller.dart:101</span> / <span class="code">pos_terminal.dart:421</span>).
+      Allowing it would create negative inventory → negative/zero COGS → misstated gross profit and an Inventory balance that can't tie to a physical count. The block is the financially-correct default.
+    </p>
+    <div class="recommendation">
+      <h3>To invoice an out-of-stock item — raise on-hand first</h3>
+      <p>
+        <strong>A. Purchase invoice (recommended):</strong> receives stock with cost + GL — the flow above. &nbsp;
+        <strong>B. Stock adjustment</strong> (Inventory → Stock Movements → positive delta): quick, but see the finding below — no GL, no cost. &nbsp;
+        <strong>C. Service / non-stock line:</strong> a line with no product id isn't stock-guarded (needs a "custom line" feature; the picker doesn't offer it yet).
+      </p>
+    </div>
+  </div>
+
+  <div class="finding risk">
+    <h3><span class="badge risk">⚠️ Risk</span> &nbsp;Picker lets you add an out-of-stock item, then fails only at save</h3>
+    <p>
+      <span class="code">_ProductPickerDialog</span> (<span class="code">operix_dashboard.dart:2801</span>) returns zero-stock rows as tappable; the user builds the invoice and only learns it's blocked at save time. POS handles this correctly by disabling the tile up front. Inconsistent and confusing.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — Medium</h3>
+      <p>Mirror POS: disable (or visibly flag) rows where <span class="code">quantityOnHand &lt;= 0</span> in the picker, or show an inline "out of stock — restock first" warning when added, so the failure is surfaced before save.</p>
+    </div>
+  </div>
+
+  <div class="finding wrong">
+    <h3><span class="badge wrong">❌ Wrong</span> &nbsp;Stock adjustments post no GL and carry no cost</h3>
+    <p>
+      <span class="code">postgres_stock_repository.dart:54</span> (<span class="code">adjust()</span>) updates <span class="code">quantity_on_hand</span> and logs a movement, but posts <strong>no journal entry</strong> and sets <strong>no cost</strong>. Consequences: (1) a positive adjustment raises quantity with no matching Inventory (1300) debit → the Inventory GL drifts from the subledger; (2) units brought in this way carry the product's existing <span class="code">cost_price</span> (often 0 for a never-purchased item), so they later sell at <strong>zero COGS</strong>, overstating gross profit.
+    </p>
+    <div class="recommendation">
+      <h3>Recommendation — High</h3>
+      <p>Post adjustments to the GL: <span class="code">Dr/Cr Inventory (1300)</span> against an <strong>Inventory Adjustment / Shrinkage (gain–loss)</strong> expense account, valued at the product's cost; for opening-stock receipts, capture a cost on the way in (and weight it into <span class="code">cost_price</span>). Block zero-cost positive adjustments on items with no cost set.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Gap Analysis -->
+<div class="section">
+  <h2>Operix Gap Analysis (flow-relevant rows)</h2>
+  <table class="summary-table">
+    <thead><tr><th>#</th><th>Area</th><th>Check</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>5</td><td>AP</td><td>Journal entry on purchase invoice (stock receipt)</td><td><span class="badge ok">✅ Implemented</span></td></tr>
+      <tr><td>11</td><td>Inventory</td><td>Weighted-average cost tracking</td><td><span class="badge ok">✅ Implemented</span></td></tr>
+      <tr><td>12</td><td>Inventory</td><td>Negative stock blocked (sales invoice &amp; POS)</td><td><span class="badge ok">✅ Implemented</span></td></tr>
+      <tr><td>28</td><td>COGS</td><td>Perpetual COGS posting at point of sale</td><td><span class="badge ok">✅ Implemented</span></td></tr>
+      <tr><td>—</td><td>Inventory</td><td>Stock adjustment posts GL + carries cost</td><td><span class="badge wrong">❌ Missing</span></td></tr>
+      <tr><td>—</td><td>Inventory</td><td>Opening-stock receipt with cost</td><td><span class="badge missing">🔍 Not Implemented</span></td></tr>
+      <tr><td>—</td><td>Sales</td><td>Back-order / negative-stock invoicing (policy)</td><td><span class="badge missing">🔍 Not Implemented</span></td></tr>
+      <tr><td>—</td><td>UX</td><td>Picker disables out-of-stock rows</td><td><span class="badge risk">⚠️ Partial</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Recommendations -->
+<div class="section">
+  <h2>Prioritized Recommendations</h2>
+  <table class="summary-table">
+    <thead><tr><th>Priority</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><strong>High</strong></td><td>Give stock adjustments a GL posting (Inventory vs. Inventory-Adjustment account) and a cost basis; block zero-cost positive adjustments.</td></tr>
+      <tr><td><strong>Medium</strong></td><td>Disable/flag out-of-stock rows in the sales-invoice picker so the block is surfaced before save (match POS behaviour).</td></tr>
+      <tr><td><strong>Optional</strong></td><td>If back-orders are a real requirement: add an opt-in "allow negative stock" setting plus a costing rule (COGS at last/standard cost, variance reconciled on receipt). Manage the negative-inventory risk explicitly.</td></tr>
+      <tr><td><strong>Optional</strong></td><td>Add a "custom / service line" to the sales invoice for non-inventory charges (not stock-guarded).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Operix Finance Review &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; Generated 2026-06-16
+</div>
+</body>
+</html>

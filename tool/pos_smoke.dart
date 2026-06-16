@@ -9,6 +9,7 @@ import 'package:operix_mobile/src/data/pos_repository.dart';
 import 'package:operix_mobile/src/data/postgres_auth_repository.dart';
 import 'package:operix_mobile/src/data/postgres_pos_repository.dart';
 import 'package:operix_mobile/src/domain/pos_models.dart';
+import 'package:operix_mobile/src/domain/value_objects/money.dart';
 
 Future<void> main() async {
   final db = OperixDatabase(DatabaseConfig.fromEnvironment());
@@ -46,16 +47,16 @@ Future<void> main() async {
     '  shirt stock before: ${shirt.quantityOnHand}, socks: ${socks.quantityOnHand}',
   );
 
-  final shift = await pos.openShift(cashier: user, openingFloat: 500);
+  final shift = await pos.openShift(cashier: user, openingFloat: Money.of('500'));
   print('> opened shift ${shift.shiftNumber} (id=${shift.id})');
 
   final lines = [
     CartLine(product: shirt, quantity: 2),
     CartLine(product: socks, quantity: 3),
   ];
-  final subtotal = lines.fold<double>(0, (s, l) => s + l.lineTotal);
+  final subtotal = sumMoney(lines.map((l) => l.lineTotal));
   final total = subtotal;
-  const tendered = 2000.0;
+  final tendered = Money.of('2000');
   final receipt = await pos.checkout(
     CheckoutRequest(
       cashier: user,
@@ -63,8 +64,8 @@ Future<void> main() async {
       lines: lines,
       payments: [PosPayment(method: PaymentMethod.cash, amount: total)],
       subtotal: subtotal,
-      discount: 0,
-      tax: 0,
+      discount: Money.zero(),
+      tax: Money.zero(),
       total: total,
       paidAmount: tendered,
       changeAmount: tendered - total,
@@ -94,7 +95,7 @@ Future<void> main() async {
 
   final closed = await pos.closeShift(
     shift: shift,
-    countedCash: 2500,
+    countedCash: Money.of('2500'),
     notes: 'smoke test',
   );
   print(
@@ -110,14 +111,17 @@ Future<void> main() async {
         shift: shift,
         lines: [CartLine(product: tiny, quantity: 9999)],
         payments: [
-          PosPayment(method: PaymentMethod.cash, amount: tiny.unitPrice * 9999),
+          PosPayment(
+            method: PaymentMethod.cash,
+            amount: tiny.unitPrice.multiply(9999),
+          ),
         ],
-        subtotal: tiny.unitPrice * 9999,
-        discount: 0,
-        tax: 0,
-        total: tiny.unitPrice * 9999,
-        paidAmount: tiny.unitPrice * 9999,
-        changeAmount: 0,
+        subtotal: tiny.unitPrice.multiply(9999),
+        discount: Money.zero(),
+        tax: Money.zero(),
+        total: tiny.unitPrice.multiply(9999),
+        paidAmount: tiny.unitPrice.multiply(9999),
+        changeAmount: Money.zero(),
       ),
     );
     print('! oversell guard FAILED (should have thrown)');

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/l10n_ext.dart';
 import '../../app/operix_theme.dart';
 import '../../data/product_repository.dart';
 import '../../domain/inventory_models.dart';
 import 'product_form_screen.dart';
+import 'stock_movements_screen.dart';
 
 /// Products management for the Inventory module: searchable list + create/edit.
 class InventoryProductsScreen extends StatefulWidget {
@@ -53,7 +55,9 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              product == null ? 'Product created.' : 'Product updated.',
+              product == null
+                  ? context.l10n.productCreated
+                  : context.l10n.productUpdated,
             ),
           ),
         );
@@ -61,21 +65,40 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
     }
   }
 
+  void _openStockLog() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const StockMovementsScreen()));
+  }
+
+  Future<void> _adjustStock(Product product) async {
+    final applied = await showAdjustStockDialog(context, product: product);
+    if (applied == true) {
+      _reload();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.stockAdjusted)));
+      }
+    }
+  }
+
   Future<void> _delete(Product product) async {
+    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete product'),
-        content: Text('Delete "${product.name}"? This cannot be undone.'),
+        title: Text(l10n.deleteProductTitle),
+        content: Text(l10n.deleteConfirmName(product.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: OperixColors.danger),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -87,13 +110,13 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Product deleted.')));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.productDeleted)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotDelete('$e'))),
+        );
       }
     }
   }
@@ -108,7 +131,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
           Row(
             children: [
               Text(
-                'Products',
+                context.l10n.products,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
@@ -123,7 +146,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
                     _reload();
                   },
                   decoration: InputDecoration(
-                    hintText: 'Search products…',
+                    hintText: context.l10n.searchProducts,
                     prefixIcon: const Icon(Icons.search),
                     border: const OutlineInputBorder(),
                     isDense: true,
@@ -141,10 +164,16 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: _openStockLog,
+                icon: const Icon(Icons.inventory_outlined),
+                label: Text(context.l10n.stockLog),
+              ),
+              const SizedBox(width: 12),
               FilledButton.icon(
                 onPressed: () => _openForm(),
                 icon: const Icon(Icons.add),
-                label: const Text('New product'),
+                label: Text(context.l10n.newProduct),
               ),
             ],
           ),
@@ -158,7 +187,9 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
                 }
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Could not load products: ${snapshot.error}'),
+                    child: Text(
+                      context.l10n.couldNotLoadProducts(snapshot.error ?? ''),
+                    ),
                   );
                 }
                 final products = snapshot.data ?? const [];
@@ -183,6 +214,7 @@ class _InventoryProductsScreenState extends State<InventoryProductsScreen> {
                               product: product,
                               onTap: () => _openForm(product: product),
                               onEdit: () => _openForm(product: product),
+                              onAdjust: () => _adjustStock(product),
                               onDelete: () => _delete(product),
                             );
                           },
@@ -210,16 +242,17 @@ class _HeaderRow extends StatelessWidget {
       color: OperixColors.muted,
       fontSize: 12,
     );
+    final l10n = context.l10n;
     return Container(
       color: const Color(0xFFF1F5F9),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        children: const [
-          Expanded(flex: 4, child: Text('PRODUCT', style: style)),
-          Expanded(flex: 2, child: Text('CATEGORY', style: style)),
-          Expanded(flex: 2, child: Text('STOCK', style: style)),
-          Expanded(flex: 2, child: Text('PRICE', style: style)),
-          SizedBox(width: 48),
+        children: [
+          Expanded(flex: 4, child: Text(l10n.colProduct, style: style)),
+          Expanded(flex: 2, child: Text(l10n.colCategory, style: style)),
+          Expanded(flex: 2, child: Text(l10n.colStock, style: style)),
+          Expanded(flex: 2, child: Text(l10n.colPrice, style: style)),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -231,12 +264,14 @@ class _ProductRow extends StatelessWidget {
     required this.product,
     required this.onTap,
     required this.onEdit,
+    required this.onAdjust,
     required this.onDelete,
   });
 
   final Product product;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final VoidCallback onAdjust;
   final VoidCallback onDelete;
 
   @override
@@ -264,8 +299,8 @@ class _ProductRow extends StatelessWidget {
                       ),
                       if (!product.isActive) ...[
                         const SizedBox(width: 8),
-                        const _Tag(
-                          label: 'Inactive',
+                        _Tag(
+                          label: context.l10n.tagInactive,
                           color: OperixColors.muted,
                         ),
                       ],
@@ -300,7 +335,10 @@ class _ProductRow extends StatelessWidget {
                   ),
                   if (product.isLowStock) ...[
                     const SizedBox(width: 6),
-                    const _Tag(label: 'Low', color: OperixColors.warning),
+                    _Tag(
+                      label: context.l10n.tagLow,
+                      color: OperixColors.warning,
+                    ),
                   ],
                 ],
               ),
@@ -308,29 +346,46 @@ class _ProductRow extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Text(
-                formatEgp(product.sellingPrice),
+                formatMoney(product.sellingPrice),
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
             SizedBox(
               width: 48,
               child: PopupMenuButton<String>(
-                onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
-                itemBuilder: (context) => const [
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      onEdit();
+                    case 'adjust':
+                      onAdjust();
+                    case 'delete':
+                      onDelete();
+                  }
+                },
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'edit',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.edit_outlined),
-                      title: Text('Edit'),
+                      leading: const Icon(Icons.edit_outlined),
+                      title: Text(context.l10n.edit),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'adjust',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.tune),
+                      title: Text(context.l10n.adjustStock),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.delete_outline),
-                      title: Text('Delete'),
+                      leading: const Icon(Icons.delete_outline),
+                      title: Text(context.l10n.delete),
                     ),
                   ),
                 ],
@@ -377,11 +432,12 @@ class _EmptyProducts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (searching) {
-      return const Center(
+      return Center(
         child: Text(
-          'No products match your search.',
-          style: TextStyle(color: OperixColors.muted),
+          l10n.noProductsMatch,
+          style: const TextStyle(color: OperixColors.muted),
         ),
       );
     }
@@ -395,20 +451,20 @@ class _EmptyProducts extends StatelessWidget {
             color: OperixColors.subtle,
           ),
           const SizedBox(height: 14),
-          const Text(
-            'No products yet',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          Text(
+            l10n.noProductsYet,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Create your first product to start selling.',
-            style: TextStyle(color: OperixColors.muted),
+          Text(
+            l10n.createFirstProductHint,
+            style: const TextStyle(color: OperixColors.muted),
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: onCreate,
             icon: const Icon(Icons.add),
-            label: const Text('New product'),
+            label: Text(l10n.newProduct),
           ),
         ],
       ),

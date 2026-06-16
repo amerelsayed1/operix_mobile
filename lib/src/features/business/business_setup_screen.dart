@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/l10n_ext.dart';
 import '../../app/operix_theme.dart';
 import '../../data/business_repository.dart';
 import '../../data/license_repository.dart';
@@ -73,7 +74,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
       widget.onSaved();
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = 'Could not save business profile: $error');
+      setState(() => _error = context.l10n.onbSaveError('$error'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -82,11 +83,9 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      brand: const AuthBrandPanel(
-        headline: 'Set up your business',
-        subtitle:
-            'Create the local company identity used in the sidebar, receipts, '
-            'sales documents, and reports.',
+      brand: AuthBrandPanel(
+        headline: context.l10n.onbBusinessHeadline,
+        subtitle: context.l10n.onbBusinessSubtitle,
       ),
       form: SingleChildScrollView(
         child: Form(
@@ -95,16 +94,16 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Business identity',
+                context.l10n.onbBusinessIdentity,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: OperixColors.ink,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'This is the name and logo customers will see.',
-                style: TextStyle(color: OperixColors.muted),
+              Text(
+                context.l10n.onbBusinessIdentityHint,
+                style: const TextStyle(color: OperixColors.muted),
               ),
               const SizedBox(height: 24),
               Row(
@@ -122,14 +121,14 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
                           controller: _businessNameController,
                           autofocus: true,
                           textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Business name',
-                            prefixIcon: Icon(Icons.storefront_outlined),
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.onbBusinessNameLabel,
+                            prefixIcon: const Icon(Icons.storefront_outlined),
+                            border: const OutlineInputBorder(),
                           ),
                           validator: (value) =>
                               (value == null || value.trim().isEmpty)
-                              ? 'Enter the business name'
+                              ? context.l10n.onbBusinessNameRequired
                               : null,
                           onChanged: (_) => setState(() {}),
                         ),
@@ -137,14 +136,14 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
                         TextFormField(
                           controller: _branchNameController,
                           textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Branch name',
-                            prefixIcon: Icon(Icons.location_on_outlined),
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.onbBranchNameLabel,
+                            prefixIcon: const Icon(Icons.location_on_outlined),
+                            border: const OutlineInputBorder(),
                           ),
                           validator: (value) =>
                               (value == null || value.trim().isEmpty)
-                              ? 'Enter the branch name'
+                              ? context.l10n.onbBranchNameRequired
                               : null,
                         ),
                       ],
@@ -155,18 +154,18 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _logoPathController,
-                decoration: const InputDecoration(
-                  labelText: 'Business logo path',
+                decoration: InputDecoration(
+                  labelText: context.l10n.onbLogoPathLabel,
                   hintText: '/Users/.../logo.png',
-                  prefixIcon: Icon(Icons.image_outlined),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.image_outlined),
+                  border: const OutlineInputBorder(),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Optional. Use a PNG or JPG path on this workstation.',
-                style: TextStyle(color: OperixColors.muted, fontSize: 12),
+              Text(
+                context.l10n.onbLogoPathOptional,
+                style: const TextStyle(color: OperixColors.muted, fontSize: 12),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
@@ -187,7 +186,11 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
                           ),
                         )
                       : const Icon(Icons.check),
-                  label: Text(_saving ? 'Saving…' : 'Save business identity'),
+                  label: Text(
+                    _saving
+                        ? context.l10n.onbSaving
+                        : context.l10n.onbSaveBusiness,
+                  ),
                 ),
               ),
             ],
@@ -206,8 +209,17 @@ class _LogoPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final file = File(logoPath.trim());
-    final hasLogo = logoPath.trim().isNotEmpty && file.existsSync();
+    final path = logoPath.trim();
+    final placeholder = Center(
+      child: Text(
+        _initials,
+        style: const TextStyle(
+          color: OperixColors.teal,
+          fontSize: 24,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
 
     return Container(
       width: 96,
@@ -218,17 +230,14 @@ class _LogoPreview extends StatelessWidget {
         border: Border.all(color: OperixColors.border),
       ),
       clipBehavior: Clip.antiAlias,
-      child: hasLogo
-          ? Image.file(file, fit: BoxFit.cover)
-          : Center(
-              child: Text(
-                _initials,
-                style: const TextStyle(
-                  color: OperixColors.teal,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+      // No synchronous existsSync() in build: Image.file loads off the UI thread
+      // and errorBuilder covers a missing/invalid path.
+      child: path.isEmpty
+          ? placeholder
+          : Image.file(
+              File(path),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => placeholder,
             ),
     );
   }
